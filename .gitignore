@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Prisma client auto-generated
+prisma/node_modules/
+prisma/migrations/
+
+# Test results
+test-results/
+
+# Vitest coverage
+coverage/
