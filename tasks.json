@@ -1,0 +1,23 @@
+[
+  {"Task ID":"T01","Feature Name":"Patient List","Status":"เสร็จแล้ว","Assignee":"Dev Team","Priority":"Low","Module":"Patients List","Due Date":"2025-06-17"},
+  {"Task ID":"T02","Feature Name":"New Patient Form","Status":"เสร็จแล้ว","Assignee":"Dev Team","Priority":"Low","Module":"New Patient Module","Due Date":"2025-06-17"},
+  {"Task ID":"T03","Feature Name":"Edit Patient Form","Status":"เสร็จแล้ว","Assignee":"Dev Team","Priority":"Low","Module":"Edit Patient Module","Due Date":"2025-06-17"},
+  {"Task ID":"T04","Feature Name":"Review Submissions","Status":"เสร็จแล้ว","Assignee":"Dev Team","Priority":"Low","Module":"Review Module","Due Date":"2025-06-17"},
+  {"Task ID":"T05","Feature Name":"Error handling tests for upload","Status":"ยังไม่สมบูรณ์","Assignee":"Dev Team","Priority":"High","Module":"Upload Module","Due Date":"2025-06-20"},
+  {"Task ID":"T06","Feature Name":"Preview component/UX flow on Upload Page","Status":"ยังไม่สมบูรณ์","Assignee":"Dev Team","Priority":"High","Module":"Upload Module","Due Date":"2025-06-20"},
+  {"Task ID":"T07","Feature Name":"Accessibility tests for FileInputGroup","Status":"ยังไม่สมบูรณ์","Assignee":"Dev Team","Priority":"Medium","Module":"Upload Module","Due Date":"2025-06-20"},
+  {"Task ID":"T08","Feature Name":"Integration test (schema→preview→API→UI)","Status":"ยังไม่สมบูรณ์","Assignee":"Dev Team","Priority":"High","Module":"Upload Module","Due Date":"2025-06-22"},
+  {"Task ID":"T09","Feature Name":"Role-based access control UI","Status":"ยังไม่เริ่ม","Assignee":"Dev Team","Priority":"High","Module":"Access Control","Due Date":"2025-07-01"},
+  {"Task ID":"T10","Feature Name":"Driver dashboard","Status":"ยังไม่เริ่ม","Assignee":"Dev Team","Priority":"Medium","Module":"Dashboard","Due Date":"2025-07-08"},
+  {"Task ID":"T11","Feature Name":"Executive dashboard","Status":"ยังไม่เริ่ม","Assignee":"Dev Team","Priority":"Medium","Module":"Dashboard","Due Date":"2025-07-08"},
+  {"Task ID":"T12","Feature Name":"Health-officer dashboard","Status":"ยังไม่เริ่ม","Assignee":"Dev Team","Priority":"Medium","Module":"Dashboard","Due Date":"2025-07-08"},
+  {"Task ID":"T13","Feature Name":"E2E tests for main flows","Status":"ยังไม่เริ่ม","Assignee":"QA Team","Priority":"High","Module":"Testing","Due Date":"2025-07-15"},
+  {"Task ID":"T14","Feature Name":"Refactor usePreviewFiles hook","Status":"ต้องปรับปรุง","Assignee":"Dev Team","Priority":"Medium","Module":"Upload Module","Due Date":"2025-06-23"},
+  {"Task ID":"T15","Feature Name":"Add loading state & disable submit buttons","Status":"ต้องปรับปรุง","Assignee":"Dev Team","Priority":"Medium","Module":"Forms","Due Date":"2025-06-23"},
+  {"Task ID":"T16","Feature Name":"Add form reset/default values","Status":"ต้องปรับปรุง","Assignee":"Dev Team","Priority":"Medium","Module":"Forms","Due Date":"2025-06-23"},
+  {"Task ID":"T17","Feature Name":"Client-side file duplicate & size validation","Status":"ต้องปรับปรุง","Assignee":"Dev Team","Priority":"Medium","Module":"Upload Module","Due Date":"2025-06-23"},
+  {"Task ID":"T18","Feature Name":"Debounce/throttle filter functions","Status":"ต้องปรับปรุง","Assignee":"Dev Team","Priority":"Medium","Module":"Patients List","Due Date":"2025-06-23"}
+  ,{"Task ID":"T19","Feature Name":"Finalize Community Dashboard","Status":"ยังไม่เริ่ม","Assignee":"คุณวศิน P","Priority":"Medium","Module":"Community Dashboard","Due Date":"2025-07-15"},
+  {"Task ID":"T20","Feature Name":"Finalize Admin Dashboard","Status":"ยังไม่เริ่ม","Assignee":"คุณวศิน P","Priority":"Medium","Module":"Admin Dashboard","Due Date":"2025-07-15"},
+  {"Task ID":"T21","Feature Name":"Role-based Access Control Tests (Community & Admin)","Status":"ยังไม่เริ่ม","Assignee":"QA Team","Priority":"High","Module":"Access Control Test Suite","Due Date":"2025-07-10"}
+]

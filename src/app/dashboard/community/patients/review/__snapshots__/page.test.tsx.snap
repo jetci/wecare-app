@@ -1,0 +1,231 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PatientReviewPage > renders patient data from params 1`] = `
+<div>
+  <div
+    class="max-w-2xl mx-auto p-6 bg-white rounded shadow"
+  >
+    <h1
+      class="text-2xl font-bold mb-4"
+    >
+      ตรวจสอบข้อมูลผู้ป่วย
+    </h1>
+    <div
+      class="space-y-2 mb-6"
+    >
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          คำนำหน้า:
+        </span>
+        <span>
+          นาย
+        </span>
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          ชื่อ:
+        </span>
+        <span>
+          Somchai
+        </span>
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          สกุล:
+        </span>
+        <span>
+          Sukjai
+        </span>
+      </div>
+      <div
+        class="flex items-center space-x-2"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          รูปภาพผู้ป่วย:
+        </span>
+        <span
+          class="text-red-500"
+        >
+          ไม่มีรูปภาพผู้ป่วย
+        </span>
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          เลขบัตรประชาชน:
+        </span>
+        <span />
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          เบอร์โทร:
+        </span>
+        <span />
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          เพศ:
+        </span>
+        <span />
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          กรุ๊ฟเลือด:
+        </span>
+        <span />
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          วันเกิด:
+        </span>
+        <span>
+          ไม่มีข้อมูล
+        </span>
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          อายุ:
+        </span>
+        <span />
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          ที่อยู่:
+        </span>
+        <span>
+          เลขที่ undefined หมู่ที่ undefined หมู่บ้าน undefined ตำบล เวียง อำเภอ ฝาง จังหวัด เชียงใหม่
+        </span>
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          สถานะการช่วยเหลือตัวเอง:
+        </span>
+        <span />
+      </div>
+      <div
+        class="space-y-2 mb-4"
+      >
+        <div
+          class="flex"
+        >
+          <span
+            class="w-40 font-semibold"
+          >
+            หนังสือรับรอง กำนัน/ผู้ใหญ่บ้าน:
+          </span>
+          <span>
+            ไม่มีเอกสารแนบ
+          </span>
+        </div>
+        <div
+          class="flex"
+        >
+          <span
+            class="w-40 font-semibold"
+          >
+            หนังสือรับรองผู้ป่วยติดเตียง:
+          </span>
+          <span>
+            ไม่มีเอกสารแนบ
+          </span>
+        </div>
+        <div
+          class="flex"
+        >
+          <span
+            class="w-40 font-semibold"
+          >
+            สำเนาใบนัดแพทย์:
+          </span>
+          <span>
+            ไม่มีเอกสารแนบ
+          </span>
+        </div>
+        <div
+          class="flex"
+        >
+          <span
+            class="w-40 font-semibold"
+          >
+            เอกสารอื่นๆ:
+          </span>
+          <span>
+            ไม่มีเอกสารแนบ
+          </span>
+        </div>
+      </div>
+      <div
+        class="flex"
+      >
+        <span
+          class="w-40 font-semibold"
+        >
+          พิกัดรับส่ง:
+        </span>
+        <span>
+          พิกัดรับส่ง: undefined, undefined
+        </span>
+      </div>
+    </div>
+    <div
+      class="flex justify-end space-x-4"
+    >
+      <button
+        class="px-4 py-2 border rounded text-gray-700"
+      >
+        แก้ไข
+      </button>
+      <button
+        class="px-4 py-2 bg-indigo-600 text-white rounded"
+      >
+        ยืนยันและบันทึก
+      </button>
+    </div>
+  </div>
+</div>
+`;
