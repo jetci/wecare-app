@@ -5,14 +5,30 @@ export async function POST(request: Request) {
   console.log('[API /api/login] Received:', body);
   const { citizenId, password } = body;
 
-  // ตัวอย่างตรวจสอบรหัสประชาชนและรหัสผ่าน
+  // Mock ตรวจสอบรหัสประชาชนและรหัสผ่าน
   if (citizenId === '3500200461028' && password === '@Admin123') {
-    const res = NextResponse.json({ success: true });
-    res.cookies.set('auth', 'mock', { httpOnly: true, path: '/' });
-    return res;
+    const response = new NextResponse(
+      JSON.stringify({ success: true, role: 'DEVELOPER' }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    response.cookies.set('auth', 'mock', {
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+    });
+    return response;
   }
-  return NextResponse.json(
-    { message: 'รหัสประชาชนหรือรหัสผ่านไม่ถูกต้อง' },
-    { status: 401 }
+
+  return new NextResponse(
+    JSON.stringify({ message: 'รหัสประชาชนหรือรหัสผ่านไม่ถูกต้อง' }),
+    {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    }
   );
 }

@@ -65,32 +65,28 @@ export default function UploadPatientDocsPage() {
         name="certHead"
         register={register}
         error={errors.certHead?.message}
-        previewUrl={previews.certHead}
-        fileName={fileNames.certHead}
+        previewInfo={previews.certHead}
       />
       <FileInputGroup
         label="หนังสือรับรองผู้ป่วยติดเตียง"
         name="certBed"
         register={register}
         error={errors.certBed?.message}
-        previewUrl={previews.certBed}
-        fileName={fileNames.certBed}
+        previewInfo={previews.certBed}
       />
       <FileInputGroup
         label="สำเนาใบนัดแพทย์"
         name="appointment"
         register={register}
         error={errors.appointment?.message}
-        previewUrl={previews.appointment}
-        fileName={fileNames.appointment}
+        previewInfo={previews.appointment}
       />
       <FileInputGroup
         label="เอกสารอื่นๆ"
         name="other"
         register={register}
         error={errors.other?.message}
-        previewUrl={previews.other}
-        fileName={fileNames.other}
+        previewInfo={previews.other}
       />
 
       <div className="flex space-x-4 md:col-span-2">

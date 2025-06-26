@@ -27,13 +27,15 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setErrorMessage(null);
     try {
-      const res = await fetch('/api/login', {
+      const res = await fetch('/api/login', { credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ citizenId: data.citizenId, password: data.password })
       });
       if (res.ok) {
-        router.push('/dashboard');
+        const data = await res.json();
+        const role = (data as any).role || 'guest';
+        window.location.assign(`/dashboard/${role.toLowerCase()}`);
       } else {
         const err = await res.json();
         setErrorMessage(err.message || 'เกิดข้อผิดพลาด');

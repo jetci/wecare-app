@@ -29,6 +29,9 @@ export default function DashboardPage() {
           case 'ADMIN':
             router.replace('/dashboard/admin');
             break;
+          case 'DEVELOPER':
+            router.replace('/dashboard/developer');
+            break;
           default:
             router.replace('/dashboard');
         }

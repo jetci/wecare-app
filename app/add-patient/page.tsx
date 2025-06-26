@@ -3,9 +3,10 @@ import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import DashboardLayout from '@/components/DashboardLayout';
+import DashboardLayout from '@/app/dashboard/layout';
 import RoleGuard from '@/components/RoleGuard';
 import MapPicker from '@/components/MapPicker';
+import { Role } from '@/types/roles';
 
 const schema = z.object({
   prefix: z.enum(['Mr.', 'Mrs.', 'Miss'], { required_error: 'กรุณาเลือกคำนำหน้า' }),
@@ -38,8 +39,8 @@ export default function AddPatientPage() {
   const onSubmit = (data: FormData) => console.log(data);
 
   return (
-    <RoleGuard>
-      <DashboardLayout>
+    <RoleGuard allowedRoles={[Role.COMMUNITY, Role.DEVELOPER]}>
+      <DashboardLayout role="community">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
           {/* Section 1: ข้อมูลเบื้องต้น */}
           <div className="bg-white p-4 rounded-lg shadow space-y-4">
@@ -148,10 +149,9 @@ export default function AddPatientPage() {
                 name="location"
                 render={({ field }) => (
                   <MapPicker
-                    lat={field.value.lat}
-                    lng={field.value.lng}
-                    onDragEnd={(lat, lng) => field.onChange({ lat, lng })}
-                  />
+                      center={{ lat: field.value.lat, lng: field.value.lng }}
+                      onDragEnd={(position) => field.onChange(position)}
+                    />
                 )}
               />
             </div>

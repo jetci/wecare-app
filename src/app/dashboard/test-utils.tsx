@@ -10,7 +10,7 @@ import {
   cleanup,
   type RenderOptions,
 } from '@testing-library/react';
-import { renderHook } from '@testing-library/react-hooks';
+// Removed renderHook import; hook testing should use render from @testing-library/react or custom wrappers
 import { vi } from 'vitest';
 import RoleGuard from '@/components/RoleGuard';
 import { AuthProvider } from '@/context/AuthContext';
@@ -71,5 +71,5 @@ export {
   within,
   waitForElementToBeRemoved,
   cleanup,
-  renderHook,
+  // renderHook removed,
 };

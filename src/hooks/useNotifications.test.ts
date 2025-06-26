@@ -1,6 +1,6 @@
 import React from 'react';
-import { renderHook, waitFor, RenderHookResult } from '@testing-library/react';
-import { act } from 'react';
+import React from 'react';
+import { render, screen, act, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useNotifications } from './useNotifications';
@@ -8,9 +8,17 @@ import { Notification } from '@/types';
 
 let mockFetch: ReturnType<typeof vi.fn>;
 
-// SWR wrapper to disable cache without JSX
-const wrapper = ({ children }: { children: React.ReactNode }) =>
-  React.createElement(SWRConfig, { value: { provider: () => new Map(), dedupingInterval: 0 } }, children);
+function TestComponent({ wrapperProps }: { wrapperProps?: { provider: () => any; dedupingInterval: number } }) {
+  const { notifications, error, isLoading, refetch, deleteNotification } = useNotifications();
+  return (
+    <>
+      <div data-testid="notifications">{JSON.stringify(notifications)}</div>
+      <div data-testid="error">{error?.toString()}</div>
+      <button data-testid="refetch" onClick={() => refetch()}>refetch</button>
+      <button data-testid="delete" onClick={async () => await deleteNotification('1')}>delete</button>
+    </>
+  );
+}
 
 describe('useNotifications', () => {
   beforeEach(() => {
@@ -29,7 +37,7 @@ describe('useNotifications', () => {
     mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve(data) } as any);
 
     const { result } = renderHook(() => useNotifications(), { wrapper });
-    await waitFor(() => expect(result.current.notifications).toEqual(data));
+    await waitFor(() => expect(screen.getByTestId('notifications').textContent).toBe(JSON.stringify(data)));
 
     expect(result.current.error).toBeUndefined();
     expect(result.current.isLoading).toBeFalsy();
@@ -39,7 +47,7 @@ describe('useNotifications', () => {
     mockFetch.mockRejectedValueOnce(new Error('fail'));
 
     const { result } = renderHook(() => useNotifications(), { wrapper });
-    await waitFor(() => expect(result.current.error).toBeDefined());
+    await waitFor(() => expect(screen.getByTestId('error').textContent).not.toBe(''));
 
     expect(result.current.notifications).toEqual([]);
   });

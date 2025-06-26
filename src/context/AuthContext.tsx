@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ApiProfile } from '@/types/api';
 
 // Use ApiProfile from API for user context
@@ -64,6 +65,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isAdmin = useMemo(() => role === 'ADMIN', [role]);
   const isGuest = useMemo(() => !isAuthenticated, [isAuthenticated]);
+
+  // Redirect to dashboard per role after authentication
+  const router = useRouter();
+  useEffect(() => {
+    if (!loading && isAuthenticated && role) {
+      router.replace(`/dashboard/${role.toLowerCase()}`);
+    }
+  }, [loading, isAuthenticated, role, router]);
 
   return (
     <AuthContext.Provider value={{ user, role, isAuthenticated, loading, setRole, isAdmin, isGuest }}>

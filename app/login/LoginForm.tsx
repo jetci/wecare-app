@@ -39,8 +39,9 @@ export default function LoginForm() {
         document.cookie = `refreshToken=${json.refreshToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       }
       router.push(`/dashboard/${json.user.role.toLowerCase()}`);
-    } catch (err: any) {
-      toast.error(err.message || 'เกิดข้อผิดพลาด');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
+      toast.error(message);
     }
   };
 

@@ -11,7 +11,7 @@ export interface CacheStats {
 export interface JobStats {
   successCount: number
   failedCount: number
-  items: any[] // TODO: define Job type
+  items: unknown[] // TODO: define Job type
 }
 
 export interface DeploymentStats {
@@ -59,7 +59,7 @@ export interface DashboardMenuItem {
   key: string
   title: string
   path: string
-  icon?: ComponentType<any>
+  icon?: ComponentType<unknown>
   children?: DashboardMenuItem[]
 }
 
