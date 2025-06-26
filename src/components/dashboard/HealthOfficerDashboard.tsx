@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import useSWR from 'swr'
 import { NotificationList } from '../ui/NotificationList'
-import ConfirmationModal from '../ui/ConfirmationModal'
-import CaseStatusMap from '../maps/CaseStatusMap'
+import { ConfirmationModal } from '../ui/ConfirmationModal'
+import { CaseStatusMap } from '../maps/CaseStatusMap'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -12,11 +12,11 @@ const HealthOfficerDashboard: React.FC = () => {
   const { data: profile } = useSWR<{ id: string; role: string }>('/api/auth/profile', fetcher)
   const userId = profile?.id || ''
 
-  const { data: assigned } = useSWR<any[]>(
+  const { data: assigned, mutate: mutateAssigned } = useSWR<any[]>(
     `/api/patients?assignedTo=${userId}`,
     fetcher
   )
-  const { data: unapproved } = useSWR<any[]>(
+  const { data: unapproved, mutate: mutateUnapproved } = useSWR<any[]>(
     '/api/patients?approved=false',
     fetcher
   )
@@ -25,8 +25,8 @@ const HealthOfficerDashboard: React.FC = () => {
   const handleApprove = async (patientId: string) => {
     await fetch(`/api/patients/${patientId}/approve`, { method: 'PATCH' })
     // revalidate
-    assigned?.mutate && assigned.mutate()
-    unapproved?.mutate && unapproved.mutate()
+    mutateAssigned && mutateAssigned()
+    mutateUnapproved()
     window.alert('อนุมัติสำเร็จ')
   }
 
@@ -38,7 +38,7 @@ const HealthOfficerDashboard: React.FC = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ patientId, toUserId: to }),
     })
-    assigned?.mutate && assigned.mutate()
+    mutateAssigned()
     window.alert('ส่งต่อสำเร็จ')
   }
 
@@ -93,7 +93,7 @@ const HealthOfficerDashboard: React.FC = () => {
 
       {/* Map Cluster */}
       <div className="h-64">
-        <CaseStatusMap patients={assigned || []} />
+        <CaseStatusMap locations={assigned || []} />
       </div>
 
       {/* Notifications and Reports */}

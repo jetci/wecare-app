@@ -50,7 +50,7 @@ export default function AdminReportsPage() {
 
   return (
     <RoleGuard allowedRoles={[Role.ADMIN]}>
-      <DashboardLayout>
+      <DashboardLayout role="admin">
         <div className="space-y-6 p-4">
           <ReportFilterPanel onFilter={setFilters} />
           {isLoading && <Spinner />}

@@ -6,14 +6,16 @@ import { fetcher } from '@/lib/fetcher';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 
+interface JobsStatus { successCount: number; failedCount: number; items: any[]; }
+
 export default function JobsPage() {
-  const { data, error, isLoading } = useSWR('/api/jobs/status', fetcher);
-  const sampleJobs = {
+  const sampleJobs: JobsStatus = {
     successCount: 0,
     failedCount: 0,
     items: [],
   };
-  const jobsData = data || sampleJobs;
+  const { data, error, isLoading } = useSWR<JobsStatus>('/api/jobs/status', fetcher);
+  const jobsData = data ?? sampleJobs;
 
   return (
     <div className="p-6">

@@ -44,12 +44,16 @@ const ExecutiveDashboard: React.FC = () => {
         <h2 className="text-xl font-semibold mb-2">Top Performers</h2>
         {leaderboard ? (
           <Table
-            columns={[ 'Name', 'Rides Completed', 'Rating' ]}
-            data={leaderboard.map((u: any) => [
-              `${u.firstName} ${u.lastName}`,
-              u.completed,
-              u.rating
-            ])}
+            columns={[
+              { key: 'name', label: 'Name' },
+              { key: 'completed', label: 'Rides Completed' },
+              { key: 'rating', label: 'Rating' },
+            ]}
+            data={leaderboard.map((u: any) => ({
+              name: `${u.firstName} ${u.lastName}`,
+              completed: u.completed,
+              rating: u.rating,
+            }))}
           />
         ) : (
           <p>Loading Leaderboard...</p>

@@ -14,10 +14,12 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 interface RideFormProps {
-  onSuccess: () => void
-}
+  onClose: () => void
+  /** เรียกเมื่อ submit สำเร็จ (optional) */
+  onSuccess?: () => void
+} 
 
-export function RideForm({ onSuccess }: RideFormProps) {
+export function RideForm({ onSuccess, onClose }: RideFormProps) {
   // ดึงข้อมูล patients จาก API ที่ส่งกลับ { patients: Patient[] }
   const { data } = useSWR<{ patients: { id: string; firstName: string; lastName: string; villageName: string }[] }>(
     '/api/patients?approved=true',
@@ -44,7 +46,7 @@ export function RideForm({ onSuccess }: RideFormProps) {
       })
       if (!res.ok) throw new Error('การร้องขอล้มเหลว')
       window.alert('ส่งคำขอสำเร็จ')
-      onSuccess()
+      onSuccess?.()
     } catch (err: unknown) {
       if (err instanceof Error) {
         window.alert(err.message)
@@ -98,7 +100,7 @@ export function RideForm({ onSuccess }: RideFormProps) {
         <div className="flex justify-end space-x-2">
           <button
             type="button"
-            onClick={onSuccess}
+            onClick={onClose}
             className="px-4 py-2 bg-gray-200 rounded"
             disabled={isSubmitting}
             aria-label="ยกเลิก"

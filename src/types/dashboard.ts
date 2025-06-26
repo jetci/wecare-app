@@ -1,6 +1,6 @@
 // src/types/dashboard.ts
 
-import type { ComponentType } from 'react';
+import React from 'react';
 
 export interface CacheStats {
   hits: number
@@ -59,7 +59,7 @@ export interface DashboardMenuItem {
   key: string
   title: string
   path: string
-  icon?: ComponentType<unknown>
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
   children?: DashboardMenuItem[]
 }
 

@@ -53,15 +53,15 @@ const AdminDashboard: React.FC = () => {
                 <span>{u.firstName} {u.lastName} ({u.role})</span>
                 <div className="space-x-2">
                   <button className="px-2 py-1 bg-green-500 text-white rounded"
-                    onClick={() => handleAction(`/api/admin/users/${u.id}/approve`, 'PUT', null, mutateUsers)}>
+                    onClick={() => handleAction(`/api/admin/users/${u.id}/approve`, 'PUT', undefined, mutateUsers)}>
                     Approve
                   </button>
                   <button className="px-2 py-1 bg-red-500 text-white rounded"
-                    onClick={() => handleAction(`/api/admin/users/${u.id}/disable`, 'PUT', null, mutateUsers)}>
+                    onClick={() => handleAction(`/api/admin/users/${u.id}/disable`, 'PUT', undefined, mutateUsers)}>
                     Disable
                   </button>
                   <button className="px-2 py-1 bg-yellow-500 text-white rounded"
-                    onClick={() => handleAction(`/api/admin/users/${u.id}/reset-password`, 'POST', null)}>
+                    onClick={() => handleAction(`/api/admin/users/${u.id}/reset-password`, 'POST')}>
                     Reset PW
                   </button>
                 </div>
@@ -92,7 +92,7 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'API Keys' && (
           <div>
             <button className="mb-2 px-3 py-1 bg-blue-500 text-white rounded"
-              onClick={() => handleAction('/api/admin/api-keys','POST',null, mutateKeys)}>
+              onClick={() => handleAction('/api/admin/api-keys','POST',undefined, mutateKeys)}>
               Create Key
             </button>
             {keysError && <p className="text-red-500">Error</p>}
@@ -100,7 +100,7 @@ const AdminDashboard: React.FC = () => {
               <div key={k.id} className="flex justify-between p-1 border-b">
                 <span>{k.key}</span>
                 <button className="px-2 py-1 bg-red-500 text-white rounded"
-                  onClick={() => handleAction(`/api/admin/api-keys/${k.id}`,'DELETE',null, mutateKeys)}>
+                  onClick={() => handleAction(`/api/admin/api-keys/${k.id}`,'DELETE',undefined, mutateKeys)}>
                   Revoke
                 </button>
               </div>

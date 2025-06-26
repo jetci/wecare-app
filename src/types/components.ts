@@ -40,3 +40,18 @@ export interface RideRequest {
     lastName: string;
   };
 }
+
+export interface PatientLocation {
+  id: string;
+  lat: number;
+  lng: number;
+}
+
+export interface ConfirmInfo {
+  id: string;
+  date: string;
+  patient: {
+    firstName: string;
+    lastName: string;
+  };
+}

@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import useSWR from 'swr'
-import { NotificationList } from '../ui/NotificationList'
-import ConfirmationModal from '../ui/ConfirmationModal'
-import DriverLiveMap from '../maps/DriverLiveMap'
+import { NotificationList, Notification } from '../ui/NotificationList'
+import { ConfirmationModal } from '../ui/ConfirmationModal'
+import { DriverLiveMap } from '../maps/DriverLiveMap'
 import { RideRequest, UnknownObject } from '@/types/components'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
@@ -27,7 +27,7 @@ const DriverDashboard: React.FC = () => {
     `/api/rides?driverId=${userId}&status=COMPLETED`,
     fetcher
   )
-  const { data: notifications } = useSWR<UnknownObject[]>('/api/notifications', fetcher)
+  const { data: notifications } = useSWR<Notification[]>('/api/notifications', fetcher)
 
   const toggleOnline = () => setIsOnline(o => !o)
 

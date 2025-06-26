@@ -6,10 +6,14 @@ import { fetcher } from '@/lib/fetcher';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 
+interface CacheStatus { hits: number; misses: number; keysCount: number; }
+
 export default function CachePage() {
-  const { data, error, isLoading } = useSWR('/api/cache/status', fetcher);
-  const sampleCache = { hits: 0, misses: 0, keysCount: 0 };
-  const cacheData = data || sampleCache;
+  const sampleCache: CacheStatus = { hits: 0, misses: 0, keysCount: 0 };
+  const { data, error, isLoading } = useSWR<CacheStatus>('/api/cache/status', fetcher);
+  const cacheData = data ?? sampleCache;
+
+
 
   return (
     <div className="p-6">

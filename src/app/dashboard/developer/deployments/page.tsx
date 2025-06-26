@@ -6,10 +6,14 @@ import { fetcher } from '@/lib/fetcher';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 
+interface DeploymentStatus { pendingCount: number; successCount: number; failureCount: number; lastDeployed: string; }
+
 export default function DeploymentsPage() {
-  const { data, error, isLoading } = useSWR('/api/deployments/status', fetcher);
-  const sample = { pendingCount: 0, successCount: 0, failureCount: 0, lastDeployed: '' };
-  const stats = data || sample;
+  const sample: DeploymentStatus = { pendingCount: 0, successCount: 0, failureCount: 0, lastDeployed: '' };
+  const { data, error, isLoading } = useSWR<DeploymentStatus>('/api/deployments/status', fetcher);
+  const stats = data ?? sample;
+
+
 
   return (
     <div className="p-6">

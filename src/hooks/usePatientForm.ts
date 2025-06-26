@@ -55,7 +55,7 @@ export function usePatientForm(initialForm: PatientFormState = {}) {
 
     setIsUploading(true);
     try {
-      await fetchData(fd);
+      await fetchData();
       router.push('/dashboard/community/patients');
     } catch (err:any) {
       setErrors((prev: Record<string,string>) => ({ ...prev, submit: err.message || 'ผิดพลาด' }));

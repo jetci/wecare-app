@@ -5,13 +5,15 @@ import { fetcher } from '@/lib/fetcher';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 
+interface FeatureFlag { key: string; name: string; enabled: boolean; }
+
 export default function FeatureFlagsPage() {
-  const { data, error, isLoading } = useSWR('/api/feature-flags', fetcher);
-  const sampleFlags = [
+  const sampleFlags: FeatureFlag[] = [
     { key: 'flag1', name: 'NewUI', enabled: true },
     { key: 'flag2', name: 'BetaMode', enabled: false },
   ];
-  const flagsData = data || sampleFlags;
+  const { data, error, isLoading } = useSWR<FeatureFlag[]>('/api/feature-flags', fetcher);
+  const flagsData = data ?? sampleFlags;
 
   return (
     <div className="p-6">

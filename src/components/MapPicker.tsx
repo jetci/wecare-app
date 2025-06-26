@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
+
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
+import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 // default Leaflet marker icon
@@ -12,12 +13,12 @@ interface MapPickerProps {
 }
 
 const MapPicker: React.FC<MapPickerProps> = ({ center, onDragEnd }) => {
-  const mapRef = useRef<L.Map>(null);
+  const mapRef = useRef<any>(null);
   return (
     <MapContainer
       defaultCenter={center}
       zoom={13}
-      whenCreated={(map) => {
+      whenCreated={(map: any) => {
         mapRef.current = map;
       }}
       className="w-full h-full"

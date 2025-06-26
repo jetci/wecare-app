@@ -15,7 +15,6 @@ const schema = z.object({
   companions: z
     .number()
     .min(0, "จำนวนผู้โดยสารต้องไม่ติดลบ")
-    .optional()
     .default(0),
   notes: z.string().optional(),
   attachments: z.any().optional(),
@@ -29,7 +28,10 @@ export default function CommunityRequestForm() {
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: { companions: 0 },
+  });
 
   const onSubmit = async (data: FormData) => {
     // TODO: integrate API POST /api/requests
