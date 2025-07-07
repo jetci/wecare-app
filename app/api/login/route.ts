@@ -1,22 +1,17 @@
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  console.log('[API /api/login] Received:', body);
-  const { citizenId, password } = body;
+  const { nationalId, password } = await request.json();
+  console.log('[API /api/login] Received:', { nationalId, password });
+  
 
   // Mock ตรวจสอบรหัสประชาชนและรหัสผ่าน
-  if (citizenId === '3500200461028' && password === '@Admin123') {
-    const response = new NextResponse(
-      JSON.stringify({ success: true, role: 'DEVELOPER' }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
+  if (nationalId === '3500200461028' && password === '@Admin123') {
+    const response = NextResponse.json(
+      { accessToken: 'mock-token', refreshToken: 'mock-token', user: { nationalId, role: 'COMMUNITY' } },
+      { status: 200 }
     );
-    response.cookies.set('auth', 'mock', {
+    response.cookies.set('refreshToken', 'mock-token', {
       httpOnly: true,
       path: '/',
       sameSite: 'lax',
@@ -24,11 +19,8 @@ export async function POST(request: Request) {
     return response;
   }
 
-  return new NextResponse(
-    JSON.stringify({ message: 'รหัสประชาชนหรือรหัสผ่านไม่ถูกต้อง' }),
-    {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    }
-  );
+  return NextResponse.json(
+      { error: 'รหัสประชาชนหรือรหัสผ่านไม่ถูกต้อง' },
+      { status: 401 }
+    );
 }

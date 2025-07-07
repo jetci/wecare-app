@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import { test, expect } from '@playwright/test';
 
 // Extend test timeout to 60s
@@ -49,3 +50,4 @@ test('admin can approve a user request', async ({ page }) => {
   // Row removed
   await expect(row).toHaveCount(0);
 });
+

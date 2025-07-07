@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -62,3 +63,4 @@ describe('useRoles hook and Roles UI', () => {
     expect(await screen.findByText('Error fetching')).toBeInTheDocument();
   });
 });
+

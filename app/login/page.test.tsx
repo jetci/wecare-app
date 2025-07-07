@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
@@ -43,6 +44,7 @@ describe('Login Page', () => {
     // changing viewport size (e.g., with jest-playwright or similar) 
     // and asserting element visibility or styles.
     render(<LoginPage />);
-    expect(true).toBe(true); // Replace with actual assertions
+    expect(true).to.equal(true); // Replace with actual assertions
   });
 });
+

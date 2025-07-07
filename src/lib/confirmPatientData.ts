@@ -1,4 +1,4 @@
-export async function confirmPatientData(payload: Record<string, any>): Promise<Response> {
+export async function confirmPatientData(payload: Record<string, unknown>): Promise<Response> {
   return fetch('/api/patients', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -1,0 +1,133 @@
+openapi: 3.0.0
+security:
+  - bearerAuth: []
+info:
+  title: wecare-app API (Auth Module)
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/auth/login:
+    post:
+      summary: เข้าสู่ระบบ
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/profile:
+    get:
+      summary: ดึงข้อมูลโปรไฟล์ผู้ใช้
+      tags:
+        - Auth
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            example: Bearer <accessToken>
+      responses:
+        '200':
+          description: ข้อมูลโปรไฟล์
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - nationalId
+        - password
+      properties:
+        nationalId:
+          type: string
+          description: เลขบัตรประชาชน 13 หลัก
+          example: "1234567890123"
+        password:
+          type: string
+          description: รหัสผ่าน
+          example: "P@ssw0rd!"
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token
+        refreshToken:
+          type: string
+          description: Refresh token (HttpOnly cookie)
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            role:
+              type: string
+              enum:
+                - COMMUNITY
+                - DRIVER
+                - HEALTH_OFFICER
+                - EXECUTIVE
+                - ADMIN
+    ProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        prefix:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        nationalId:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+        approved:
+          type: boolean
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: ข้อความ error

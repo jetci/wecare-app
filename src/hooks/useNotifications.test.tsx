@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
@@ -40,15 +41,15 @@ describe('useNotifications', () => {
     mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve(data) } as any);
 
     render(wrapper(<NotificationsWrapper />));
-    await waitFor(() => expect(screen.getByTestId('notes').textContent).toBe(JSON.stringify(data)));
-    expect(screen.getByTestId('err').textContent).toBe('');
+    await waitFor(() => expect(screen.getByTestId('notes').textContent).to.equal(JSON.stringify(data)));
+    expect(screen.getByTestId('err').textContent).to.equal('');
   });
 
   it('handles error', async () => {
     mockFetch.mockRejectedValueOnce(new Error('fail'));
     render(wrapper(<NotificationsWrapper />));
-    await waitFor(() => expect(screen.getByTestId('err').textContent).not.toBe(''));
-    expect(screen.getByTestId('notes').textContent).toBe('[]');
+    await waitFor(() => expect(screen.getByTestId('err').textContent).not.to.equal(''));
+    expect(screen.getByTestId('notes').textContent).to.equal('[]');
   });
 
   it('refetches and deletes', async () => {
@@ -58,9 +59,9 @@ describe('useNotifications', () => {
       .mockResolvedValueOnce({ json: () => Promise.resolve(d1) } as any)
       .mockResolvedValueOnce({ json: () => Promise.resolve(d2) } as any);
     render(wrapper(<NotificationsWrapper />));
-    await waitFor(() => expect(screen.getByTestId('notes').textContent).toBe(JSON.stringify(d1)));
+    await waitFor(() => expect(screen.getByTestId('notes').textContent).to.equal(JSON.stringify(d1)));
     fireEvent.click(screen.getByTestId('refetch'));
-    await waitFor(() => expect(screen.getByTestId('notes').textContent).toBe(JSON.stringify(d2)));
+    await waitFor(() => expect(screen.getByTestId('notes').textContent).to.equal(JSON.stringify(d2)));
 
     // delete
     const d3: any[] = [];
@@ -68,6 +69,7 @@ describe('useNotifications', () => {
       .mockResolvedValueOnce({ ok: true } as any)
       .mockResolvedValueOnce({ json: () => Promise.resolve(d3) } as any);
     fireEvent.click(screen.getByTestId('del'));
-    await waitFor(() => expect(screen.getByTestId('notes').textContent).toBe(JSON.stringify(d3)));
+    await waitFor(() => expect(screen.getByTestId('notes').textContent).to.equal(JSON.stringify(d3)));
   });
 });
+

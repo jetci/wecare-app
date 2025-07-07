@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import { describe, it, expect } from 'vitest'
 import { verifyToken } from './auth'
 import jwt from 'jsonwebtoken'
@@ -20,13 +21,14 @@ describe('verifyToken helper', () => {
     const req = new Request('http://localhost')
     const result = await verifyToken(req)
     expect(result).toBeInstanceOf(NextResponse)
-    expect((result as NextResponse).status).toBe(401)
+    expect((result as NextResponse).status).to.equal(401)
   })
 
   it('returns 401 NextResponse for invalid token', async () => {
     const req = new Request('http://localhost', { headers: { Authorization: 'Bearer invalid' } })
     const result = await verifyToken(req)
     expect(result).toBeInstanceOf(NextResponse)
-    expect((result as NextResponse).status).toBe(401)
+    expect((result as NextResponse).status).to.equal(401)
   })
 })
+

@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import { test, expect } from '@playwright/test';
 // Enable authenticated storage
 test.use({ storageState: 'e2e/auth.json' });
@@ -57,3 +58,4 @@ test.describe('Community History Page E2E', () => {
     ]);
   });
 });
+

@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 // Mock SWR with importOriginal to preserve SWRConfig and default hook
 vi.mock('swr', async (importOriginal) => {
   const actual = await importOriginal<typeof import('swr')>();
@@ -114,3 +115,4 @@ describe('MapOverview fallback UI', () => {
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY = originalKey;
   });
 });
+

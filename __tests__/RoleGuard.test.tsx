@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react'
 import { render } from '@testing-library/react'
 import { describe, it, vi, expect, beforeEach, afterEach } from 'vitest'
@@ -65,7 +66,8 @@ describe('RoleGuard', () => {
         <TestChild />
       </RoleGuard>
     )
-    expect(queryByTestId('child')).toBeNull()
+    expect(queryByTestId('child')).to.be.null()
     expect(replaceMock).not.toHaveBeenCalled()
   })
 })
+

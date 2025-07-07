@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import VirtualizedCommunityList from './VirtualizedCommunityList';
@@ -26,7 +27,7 @@ describe('VirtualizedCommunityList', () => {
     jest.spyOn(hooks, 'useCommunities').mockReturnValue({ data: [], loading: true, error: null });
     render(<VirtualizedCommunityList />);
     const skeletons = screen.getAllByTestId('community-skeleton');
-    expect(skeletons).toHaveLength(5);
+    expect(skeletons).to.have.lengthOf(5);
   });
 
   it('shows error message on error state', async () => {
@@ -47,3 +48,4 @@ describe('VirtualizedCommunityList', () => {
     });
   });
 });
+

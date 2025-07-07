@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import { test, expect } from '@playwright/test';
 
 // Use authenticated session
@@ -50,3 +51,4 @@ test.describe('Notifications Page E2E', () => {
     await expect(page.locator('text=Deleted')).toBeVisible();
   });
 });
+

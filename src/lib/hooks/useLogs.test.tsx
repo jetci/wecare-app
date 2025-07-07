@@ -1,9 +1,13 @@
+
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { SWRConfig } from 'swr';
 import { vi } from 'vitest';
-import { useLogs, LogsResp, LogItem } from '@/lib/hooks/useLogs';
+import { useLogs, LogItem } from '@/lib/hooks/useLogs';
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
+import { useLogs, LogItem } from '@/lib/hooks/useLogs';
 
 function TestLogs({ enabled, from = '', to = '', page = 1, limit = 10 }: Partial<{ enabled: boolean; from: string; to: string; page: number; limit: number }>) {
   const { data, error, isLoading } = useLogs(enabled ?? false, from, to, page, limit);
@@ -54,3 +58,4 @@ describe('useLogs hook', () => {
     expect(await screen.findByText('Error fetching')).toBeInTheDocument();
   });
 });
+

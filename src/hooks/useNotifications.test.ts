@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import React from 'react';
 import { render, screen, act, waitFor } from '@testing-library/react';
@@ -37,17 +38,17 @@ describe('useNotifications', () => {
     mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve(data) } as any);
 
     const { result } = renderHook(() => useNotifications(), { wrapper });
-    await waitFor(() => expect(screen.getByTestId('notifications').textContent).toBe(JSON.stringify(data)));
+    await waitFor(() => expect(screen.getByTestId('notifications').textContent).to.equal(JSON.stringify(data)));
 
     expect(result.current.error).toBeUndefined();
-    expect(result.current.isLoading).toBeFalsy();
+    expect(result.current.isLoading).to.be.false();
   });
 
   it('handles error', async () => {
     mockFetch.mockRejectedValueOnce(new Error('fail'));
 
     const { result } = renderHook(() => useNotifications(), { wrapper });
-    await waitFor(() => expect(screen.getByTestId('error').textContent).not.toBe(''));
+    await waitFor(() => expect(screen.getByTestId('error').textContent).not.to.equal(''));
 
     expect(result.current.notifications).toEqual([]);
   });
@@ -96,9 +97,10 @@ describe('useNotifications', () => {
     await act(async () => {
       success = await result.current.deleteNotification('1');
     });
-    expect(success!).toBe(true);
+    expect(success!).to.equal(true);
 
     // Wait for refetch after delete
     await waitFor(() => expect(result.current.notifications).toEqual(after));
   });
 });
+

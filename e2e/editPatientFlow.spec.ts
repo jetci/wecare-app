@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import { test, expect } from '@playwright/test';
 
 test.describe('Edit Patient Flow', () => {
@@ -21,3 +22,4 @@ test.describe('Edit Patient Flow', () => {
     await expect(page.locator('body')).toContainText('บันทึกเรียบร้อย');
   });
 });
+

@@ -2,6 +2,11 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    appDir: 'src/app'
+  },
+
+
   // disable ESLint errors during build
   eslint: {
     ignoreDuringBuilds: true,

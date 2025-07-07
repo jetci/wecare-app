@@ -1,9 +1,10 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { SWRConfig } from 'swr';
 import { vi } from 'vitest';
-import { useRequests, RequestsResp, RequestUser } from '@/lib/hooks/useRequests';
+import { useRequests, RequestUser } from '@/lib/hooks/useRequests';
 
 function TestRequests({ enabled }: { enabled: boolean }) {
   const { data, error, isLoading } = useRequests(enabled);
@@ -54,3 +55,4 @@ describe('useRequests hook', () => {
     expect(await screen.findByText('Error fetching')).toBeInTheDocument();
   });
 });
+

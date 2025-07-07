@@ -1,6 +1,8 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import '@testing-library/jest-dom/vitest';
 import LoginForm from './LoginForm'; // Assuming LoginForm is in the same directory
 
 // Mock the actions or services the form might use
@@ -43,7 +45,7 @@ describe('LoginForm Component', () => {
       });
     });
 
-    it.skip('shows an error if nationalId format is invalid - TODO: implement 13-digit validation in component', async () => {
+    it('shows an error if nationalId format is invalid - TODO: implement 13-digit validation in component', async () => {
       render(<LoginForm />);
       await userEvent.type(screen.getByLabelText(/เลขบัตรประชาชน/i), '123');
       await userEvent.type(screen.getByLabelText(/รหัสผ่าน/i), 'password123');
@@ -88,7 +90,7 @@ describe('LoginForm Component', () => {
       //   });
       // });
       // Add assertions for navigation or success messages
-      expect(true).toBe(true); // Placeholder
+      expect(true).to.equal(true); // Placeholder
     });
 
     it('shows an error message on failed submission', async () => {
@@ -104,7 +106,7 @@ describe('LoginForm Component', () => {
       // await waitFor(() => {
       //   expect(screen.getByText(/อีเมลหรือรหัสผ่านไม่ถูกต้อง/i)).toBeInTheDocument();
       // });
-      expect(true).toBe(true); // Placeholder
+      expect(true).to.equal(true); // Placeholder
     });
   });
 
@@ -122,7 +124,7 @@ describe('LoginForm Component', () => {
       // await waitFor(() => {
       //  expect(screen.getByText(/เกิดข้อผิดพลาดบางอย่าง กรุณาลองใหม่อีกครั้ง/i)).toBeInTheDocument();
       // });
-      expect(true).toBe(true); // Placeholder
+      expect(true).to.equal(true); // Placeholder
     });
   });
 
@@ -131,7 +133,8 @@ describe('LoginForm Component', () => {
       render(<LoginForm />);
       // Placeholder for responsive tests. This typically requires more advanced setup
       // to simulate viewport changes and assert element styles or layout.
-      expect(true).toBe(true);
+      expect(true).to.equal(true);
     });
   });
 });
+

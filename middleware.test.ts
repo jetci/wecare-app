@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 // Mock jose.jwtVerify before imports
 vi.mock('jose', () => ({ jwtVerify: vi.fn() }));
 
@@ -37,8 +38,8 @@ describe('JWT middleware', () => {
   it('redirects to /login when no token on protected route', async () => {
     const req = makeReq({ pathname: '/dashboard/community' });
     const res = await middleware(req);
-    expect(res instanceof NextResponse).toBe(true);
-    expect(res.headers.get('location')).toBe('http://localhost/login');
+    expect(res instanceof NextResponse).to.equal(true);
+    expect(res.headers.get('location')).to.equal('http://localhost/login');
   });
 
   it('redirects to /login when invalid token', async () => {
@@ -46,7 +47,7 @@ describe('JWT middleware', () => {
     (jose.jwtVerify as Mock).mockRejectedValue(new Error('invalid token'));
     const req = makeReq({ pathname: '/dashboard/community', cookie: 'invalid' });
     const res = await middleware(req);
-    expect(res.headers.get('location')).toBe('http://localhost/login');
+    expect(res.headers.get('location')).to.equal('http://localhost/login');
   });
 
   it('allows when valid header token', async () => {
@@ -71,6 +72,7 @@ describe('JWT middleware', () => {
   it('redirects when auth header missing Bearer prefix', async () => {
     const req = makeReq({ pathname: '/dashboard/community', authHeader: 'Token invalid' });
     const res = await middleware(req);
-    expect(res.headers.get('location')).toBe('http://localhost/login');
+    expect(res.headers.get('location')).to.equal('http://localhost/login');
   });
 });
+

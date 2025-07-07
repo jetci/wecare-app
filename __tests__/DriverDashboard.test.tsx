@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, vi, beforeEach, afterEach, expect } from 'vitest';
@@ -41,3 +42,4 @@ describe('DriverDashboard', () => {
     expect(screen.queryByTestId('driver-dashboard')).not.toBeInTheDocument();
   });
 });
+

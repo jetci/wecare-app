@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { apiFetch } from '@/lib/api';
 
 interface FormData {
-  citizenId: string;      // ชื่อตรงกับ data-cy ด้วย
+  nationalId: string;      // ชื่อตรงกับ backend API
   password: string;
 }
 
@@ -24,13 +24,13 @@ export default function LoginForm() {
   const onSubmit = async (data: FormData) => {
     setErrorMessage('');
     try {
-      const res = await apiFetch('/api/auth/login', {
+      const res = await apiFetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Login failed');
+      if (!res.ok) throw new Error(json.error || json.message || 'Login failed');
       localStorage.setItem('accessToken', json.accessToken);
       document.cookie = `accessToken=${json.accessToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       if (json.refreshToken) {
@@ -48,15 +48,15 @@ export default function LoginForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-sm bg-white p-8 rounded shadow">
         <h2 className="text-2xl font-semibold mb-6 text-center">เข้าสู่ระบบ</h2>
         <div className="mb-4">
-          <label htmlFor="citizenId" className="block text-gray-700">เลขบัตรประชาชน</label>
+          <label htmlFor="nationalId" className="block text-gray-700">เลขบัตรประชาชน</label>
           <input
-            id="citizenId"
+            id="nationalId"
             data-cy="login-citizenId"
             type="text"
-            {...register('citizenId', { required: 'กรุณากรอกรหัสบัตรประชาชน' })}
+            {...register('nationalId', { required: 'กรุณากรอกรหัสบัตรประชาชน' })}
             className="w-full mt-1 px-3 py-2 border rounded"
           />
-          {errors.citizenId && <p className="text-red-500 text-sm">{errors.citizenId.message}</p>}
+          {errors.nationalId && <p className="text-red-500 text-sm">{errors.nationalId.message}</p>}
         </div>
         <div className="mb-6">
           <label htmlFor="password" className="block text-gray-700">รหัสผ่าน</label>

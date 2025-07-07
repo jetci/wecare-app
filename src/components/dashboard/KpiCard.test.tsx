@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { KpiCard } from './KpiCard';
@@ -27,3 +28,4 @@ describe('KpiCard', () => {
     expect(card).toHaveClass('bg-red-500');
   });
 });
+

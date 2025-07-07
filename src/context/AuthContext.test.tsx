@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -71,3 +72,4 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('isAdmin')).toHaveTextContent('true');
   });
 });
+

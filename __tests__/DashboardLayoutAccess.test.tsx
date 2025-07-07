@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import useSWR from 'swr';
@@ -32,6 +33,7 @@ describe('DashboardLayout developer links access', () => {
   it('hides developer link for non-developer users', () => {
     mockUseSWR.mockReturnValue({ data: { user: { nationalId: 'WRONG_ID' } }, isLoading: false });
     render(<DashboardLayout><div>Child</div></DashboardLayout>);
-    expect(screen.queryByText('ผู้พัฒนาระบบ')).toBeNull();
+    expect(screen.queryByText('ผู้พัฒนาระบบ')).to.be.null();
   });
 });
+

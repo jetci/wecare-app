@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model User {
+  id            String         @id @default(cuid())
+  nationalId    String         @unique
+  password      String
+  prefix        String?
+  firstName     String
+  lastName      String
+  phone         String?
+  role          Role           @default(COMMUNITY)
+  approved      Boolean        @default(false)
+  refreshTokens RefreshToken[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+enum Role {
+  COMMUNITY
+  DRIVER
+  HEALTH_OFFICER
+  EXECUTIVE
+  ADMIN
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}

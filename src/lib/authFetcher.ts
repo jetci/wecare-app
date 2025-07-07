@@ -23,7 +23,7 @@ export default async function authFetcher(url: string) {
 
   if (!res.ok) {
     const err = new Error('Authentication error');
-    (err as any).status = res.status;
+    (err as Error & { status?: number }).status = res.status;
     throw err;
   }
   return res.json();

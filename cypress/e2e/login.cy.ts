@@ -8,11 +8,11 @@ describe('Login flow', () => {
     cy.get('[data-cy="login-submit"]').click();
     cy.get('[data-cy="login-error"]')
       .should('be.visible')
-      .and('contain', 'กรุณากรอกรหัสผ่าน');
+      .and('contain', 'รหัสประชาชนหรือรหัสผ่านไม่ถูกต้อง');
   });
 
   it('redirect ไปหน้า dashboard/community เมื่อ login สำเร็จ', () => {
-    cy.intercept('POST', '/api/auth/login', {
+    cy.intercept('POST', '/api/login', {
       statusCode: 200,
       body: {
         accessToken: 'fake-token',
@@ -20,10 +20,7 @@ describe('Login flow', () => {
       },
     }).as('loginReq');
 
-    cy.intercept('GET', '/api/auth/profile', {
-      statusCode: 200,
-      body: { user: { nationalId: '3500200461028', role: 'COMMUNITY' } },
-    }).as('profileReq');
+    
 
     cy.visit('/login');
     cy.get('[data-cy="login-citizenId"]').type('3500200461028');
@@ -31,7 +28,7 @@ describe('Login flow', () => {
     cy.get('[data-cy="login-submit"]').click();
 
     cy.wait('@loginReq');
-    cy.wait('@profileReq');
+    
     cy.url().should('include', '/dashboard/community');
   });
 });

@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import useSWR from 'swr';
@@ -22,6 +23,7 @@ describe('DashboardLayout sidebar access', () => {
   it('hides Developer Dashboard link when nationalId does not match', () => {
     mockUseSWR.mockReturnValue({ data: { user: { nationalId: 'WRONG_ID' } }, isLoading: false });
     render(<DashboardLayout><div>Content</div></DashboardLayout>);
-    expect(screen.queryByText('ผู้พัฒนาระบบ')).toBeNull();
+    expect(screen.queryByText('ผู้พัฒนาระบบ')).to.be.null();
   });
 });
+

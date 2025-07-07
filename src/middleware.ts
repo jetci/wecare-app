@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Redirect unauthenticated users from /dashboard to login
+// Middleware นี้จะปกป้องเฉพาะหน้าเว็บ dashboard เท่านั้น
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
   const token = req.cookies.get('accessToken');
-  if (pathname.startsWith('/dashboard') && !token) {
+  if (!token && req.nextUrl.pathname.startsWith('/dashboard')) {
     const loginUrl = new URL('/login', req.url);
     return NextResponse.redirect(loginUrl);
   }
   return NextResponse.next();
 }
 
-// Apply middleware to dashboard routes
 export const config = {
   matcher: ['/dashboard/:path*'],
 };
+
