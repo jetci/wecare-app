@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
@@ -69,8 +70,9 @@ describe('useCommunityHistory', () => {
     let resolveFetch: (value: any) => void;
     mockFetch.mockReturnValueOnce(new Promise(res => { resolveFetch = res; }) as any);
     const { result } = renderHook(() => useCommunityHistory('123', '', ''), { wrapper });
-    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isLoading).to.equal(true);
     act(() => resolveFetch({ json: () => Promise.resolve(data) }));
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(result.current.isLoading).to.equal(false));
   });
 });
+

@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { SWRConfig } from 'swr';
@@ -36,7 +37,7 @@ describe('useCommunityHistory', () => {
 
   it('does not fetch when communityId is empty', () => {
     render(wrapper(<HistoryWrapper communityId="" startDate="" endDate="" />));
-    expect(screen.getByTestId('items').textContent).toBe('[]');
+    expect(screen.getByTestId('items').textContent).to.equal('[]');
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -46,16 +47,16 @@ describe('useCommunityHistory', () => {
     mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve(page1) } as any)
              .mockResolvedValueOnce({ json: () => Promise.resolve(page2) } as any);
     render(wrapper(<HistoryWrapper communityId="123" startDate="" endDate="" />));
-    await waitFor(() => expect(screen.getByTestId('items').textContent).toBe(JSON.stringify(page1.items)));
+    await waitFor(() => expect(screen.getByTestId('items').textContent).to.equal(JSON.stringify(page1.items)));
     fireEvent.click(screen.getByTestId('more'));
-    await waitFor(() => expect(screen.getByTestId('items').textContent).toBe(JSON.stringify([...page1.items, ...page2.items])));
+    await waitFor(() => expect(screen.getByTestId('items').textContent).to.equal(JSON.stringify([...page1.items, ...page2.items])));
   });
 
   it('sets error when fetch fails', async () => {
     mockFetch.mockRejectedValueOnce(new Error('Network Error'));
     render(wrapper(<HistoryWrapper communityId="123" startDate="" endDate="" />));
-    await waitFor(() => expect(screen.getByTestId('err').textContent).not.toBe(''));
-    expect(screen.getByTestId('items').textContent).toBe('[]');
+    await waitFor(() => expect(screen.getByTestId('err').textContent).not.to.equal(''));
+    expect(screen.getByTestId('items').textContent).to.equal('[]');
   });
 
   it('reports isLoading correctly', async () => {
@@ -63,8 +64,9 @@ describe('useCommunityHistory', () => {
     let resolveFn!: (value: any) => void;
     mockFetch.mockReturnValueOnce(new Promise(res => { resolveFn = res; }) as any);
     render(wrapper(<HistoryWrapper communityId="123" startDate="" endDate="" />));
-    expect(screen.getByTestId('items').textContent).toBe('[]');
+    expect(screen.getByTestId('items').textContent).to.equal('[]');
     act(() => resolveFn({ json: () => Promise.resolve(data) }));
-    await waitFor(() => expect(screen.getByTestId('items').textContent).toBe(JSON.stringify(data.items)));
+    await waitFor(() => expect(screen.getByTestId('items').textContent).to.equal(JSON.stringify(data.items)));
   });
 });
+

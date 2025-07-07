@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "test:community-api": "cross-env NODE_OPTIONS=--max_old_space_size=8192 vitest run src/app/api/community --reporter=json --outputFile=report-community-api.json",
-    "test:community-page": "cross-env NODE_OPTIONS=--max_old_space_size=8192 vitest run src/app/dashboard/community --reporter=json --outputFile=report-community-page.json",
+    "test:community-page": "cross-env NODE_OPTIONS=--max_old_space_size=8192 vitest run \"__tests__/components/community/**/*.test.tsx\" --reporter=json --outputFile=report-community-page.json",
     "test:community-hooks": "cross-env NODE_OPTIONS=--max_old_space_size=8192 vitest run src/hooks/useCommunity* --reporter=json --outputFile=report-community-hooks.json",
     "test:community-all": "npm run test:community-api && npm run test:community-page && npm run test:community-hooks",
     "test:community-pages-page": "cross-env NODE_OPTIONS=--max_old_space_size=8192 vitest run src/app/dashboard/community/page.spec.tsx --reporter=json --outputFile=report-community-pages-page.json",
