@@ -1,104 +1,63 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { verifyToken } from '@/lib/auth';
+// app/api/patients/route.ts
+
+import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { withAuth, type AuthenticatedApiHandler } from '@/lib/auth-handler';
+import { patientFormSchema } from '@/schemas/community/patient.schema';
 
-// Schema for patient data
-export const patientSchema = z.object({
-  prefix: z.enum(['นาย', 'นาง', 'นางสาว', 'เด็กชาย', 'เด็กหญิง']),
-  gender: z.enum(['male', 'female']),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  nationalId: z.string().length(13),
-  birthDate: z.string().min(1),
-  bloodType: z.enum(['A', 'B', 'AB', 'O', 'ไม่ทราบ']),
-  phone: z.string().min(1),
-  houseNumber: z.string().min(1),
-  moo: z.string().min(1),
-  tambon: z.string().min(1),
-  amphoe: z.string().min(1),
-  province: z.string().min(1),
-  currentAddressSame: z.boolean(),
-  currentHouseNumber: z.string().optional(),
-  currentMoo: z.string().optional(),
-  currentSubDistrict: z.string().optional(),
-  currentDistrict: z.string().optional(),
-  currentProvince: z.string().optional(),
-  currentPhone: z.string().optional(),
-  patientGroup: z.enum(['ผู้ยากไร้', 'ผู้ป่วยติดเตียง', 'อื่นๆ']),
-  otherGroup: z.string().optional(),
-  locationNote: z.string().optional(),
-  location: z.object({ lat: z.number(), lng: z.number() }),
-});
-
-// GET /api/patients
-export async function GET(req: NextRequest) {
-  const auth = await verifyToken(req);
-  if (auth instanceof NextResponse) return auth;
-  try {
-    const patients = await prisma.patient.findMany({ orderBy: { createdAt: 'desc' } });
-    return NextResponse.json({ success: true, patients }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
-  }
-}
-
-// POST /api/patients
-export async function POST(req: NextRequest) {
-  const auth = await verifyToken(req);
-  if (auth instanceof NextResponse) return auth;
-
-  let data: any;
-  try {
-    data = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+/**
+ * POST /api/patients
+ * สร้างผู้ป่วยใหม่ โดยตรวจสอบบทบาทก่อน
+ */
+const createPatient: AuthenticatedApiHandler = async (req, _ctx, session) => {
+  const allowedRoles = ['COMMUNITY', 'OFFICER', 'DEVELOPER'];
+  if (!allowedRoles.includes(session.role)) {
+    return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
 
-  const result = patientSchema.safeParse(data);
-  if (!result.success) {
-    return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
-  }
-  const pd = result.data;
-
-  // Calculate age from birthDate
-  const dob = new Date(pd.birthDate);
-  const age = new Date().getFullYear() - dob.getFullYear();
-
   try {
-    const exists = await prisma.patient.findUnique({ where: { nationalId: pd.nationalId } });
-    if (exists) return NextResponse.json({ error: 'ผู้ป่วยรายนี้มีอยู่แล้ว' }, { status: 409 });
+    const body = await req.json();
+    const parsed = patientFormSchema.safeParse(body);
 
-    const created = await prisma.patient.create({
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const newPatient = await prisma.patient.create({
       data: {
-        prefix: pd.prefix,
-        firstName: pd.firstName,
-        lastName: pd.lastName,
-        nationalId: pd.nationalId,
-        phone: pd.phone,
-        dob,
-        age,
-        gender: pd.gender,
-        bloodGroup: pd.bloodType,
-        addrNo: pd.houseNumber,
-        addrMoo: pd.moo,
-        villageName: pd.tambon,
-        copyAddr: pd.currentAddressSame,
-        currNo: pd.currentHouseNumber || '',
-        currMoo: pd.currentMoo || '',
-        currVillageName: pd.currentSubDistrict || '',
-        currSub: pd.currentSubDistrict || '',
-        currDist: pd.currentDistrict || '',
-        currProv: pd.currentProvince || '',
-        latitude: pd.location.lat,
-        longitude: pd.location.lng,
-        locationLabel: pd.locationNote || '',
-        patientGroup: pd.patientGroup,
-        otherGroup: pd.otherGroup || '',
+        ...parsed.data,
+        birthDate: new Date(parsed.data.birthDate),
+        managedByUserId: session.userId,
       },
     });
-    return NextResponse.json({ success: true, patient: created }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+
+    return NextResponse.json({ success: true, patient: newPatient }, { status: 201 });
+  } catch (err) {
+    console.error('🔥 POST /api/patients Error:', err);
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
-}
+};
+
+/**
+ * GET /api/patients
+ * ดึงรายการผู้ป่วยที่ผู้ใช้ดูแล
+ */
+const getPatients: AuthenticatedApiHandler = async (_req, _ctx, session) => {
+  try {
+    const patients = await prisma.patient.findMany({
+      where: { managedByUserId: session.userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return NextResponse.json({ success: true, patients }, { status: 200 });
+  } catch (err) {
+    console.error('🔥 GET /api/patients Error:', err);
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+  }
+};
+
+// ห่อหุ้มด้วย withAuth เพื่อจัดการ session และ token ให้อัตโนมัติ
+export const POST = withAuth(createPatient);
+export const GET  = withAuth(getPatients);
