@@ -9,7 +9,7 @@ type Props = { children: React.ReactNode };
 
 export default function CommunityLayout({ children }: Props) {
   return (
-    <RoleGuard allowedRoles={[Role.COMMUNITY]}>
+    <RoleGuard allowedRoles={[Role.COMMUNITY, Role.DEVELOPER, Role.ADMIN]}>
       <div className="p-6">
         <nav className="mb-4">
           <Link href="/dashboard/community" className="text-blue-500 hover:underline">← กลับหน้าหลัก</Link>

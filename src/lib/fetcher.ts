@@ -1,12 +1,18 @@
 // Generic fetcher with strict typing
-export async function fetcher<T = unknown>(url: string): Promise<T> {
+export const fetcher = async ([url, token]: [string, string | null]) => {
+  if (!token) throw new Error('No token provided');
   const res = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (!res.ok) {
-    throw new Error(`Error fetching ${url}: ${res.status} ${res.statusText}`);
+    const info = await res.json();
+    const error = new Error('Error fetching');
+    (error as any).info = info;
+    (error as any).status = res.status;
+    throw error;
   }
-  return (await res.json()) as T;
-}
+  return res.json();
+};

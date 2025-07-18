@@ -1,103 +1,86 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient, Role, Position, Prisma } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+// app/api/admin/users/route.ts
+
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { withAuth, type AuthenticatedApiHandler } from '@/lib/auth-handler';
 import { z } from 'zod';
+import { Role } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient()
+const userQuerySchema = z.object({
+  role: z.nativeEnum(Role).optional(),
+  approved: z.enum(['true','false']).optional().transform(v=>v==='true'),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
 
-// Validate and require admin JWT
-const tokenSchema = z.object({ userId: z.string(), role: z.nativeEnum(Role) });
-async function requireAdmin(req: Request): Promise<z.infer<typeof tokenSchema> | NextResponse> {
-  const auth = req.headers.get('authorization')
-  if (!auth || !auth.startsWith('Bearer '))
-    return NextResponse.json({ success: false, error: 'Missing token' }, { status: 401 })
+const getUsers: AuthenticatedApiHandler = async (req, _ctx, session) => {
+  if (session.role !== 'ADMIN') {
+    return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+  }
   try {
-    const raw = jwt.verify(auth.replace('Bearer ', ''), process.env.JWT_SECRET!);
-    const parse = tokenSchema.safeParse(raw);
-    if (!parse.success) throw new Error('Invalid token payload');
-    const payload = parse.data;
-    if (payload.role !== 'ADMIN') throw new Error()
-    return payload
-  } catch {
-    return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
-  }
-}
+    const url = new URL(req.url);
+    const params = Object.fromEntries(url.searchParams.entries());
+    const parsed = userQuerySchema.safeParse(params);
+    if (!parsed.success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid query parameters',
+        details: parsed.error.flatten(),
+      }, { status: 400 });
+    }
 
-// GET list & POST create user
-export async function GET(req: Request) {
-  const admin = await requireAdmin(req)
-  if (!(admin && typeof admin === 'object')) return admin as NextResponse
-  const url = new URL(req.url)
-  const role = url.searchParams?.get('role') ?? ''
-  const approved = url.searchParams?.get('approved') ?? null
-  const where: Prisma.UserWhereInput = {};
-  if (role) where.role = role as Role
-  if (approved !== null) where.approved = approved === 'true'
-  const users = await prisma.user.findMany({ where })
-  return NextResponse.json({ success: true, users })
-}
+    const { role, approved, page, limit } = parsed.data;
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    if (role) where.role = role;
+    if (approved !== undefined) where.approved = approved;
 
-export async function POST(req: Request) {
-  const admin = await requireAdmin(req)
-  if (!(admin && typeof admin === 'object')) return admin as NextResponse
-  let parsedBody: unknown;
-  try { parsedBody = await req.json(); } catch {
-    return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 });
-  }
-  const createSchema = z.object({ firstName: z.string(), lastName: z.string(), nationalId: z.string(), password: z.string(), role: z.nativeEnum(Role), position: z.nativeEnum(Position) });
-  const result = createSchema.safeParse(parsedBody);
-  if (!result.success) {
-    return NextResponse.json({ success: false, error: 'Invalid input' }, { status: 400 });
-  }
-  const { firstName, lastName, nationalId, password, role, position } = result.data;
-  const hashed = await bcrypt.hash(password, 10)
-  const user = await prisma.user.create({
-    data: { firstName, lastName, nationalId, password: hashed, role, position, approved: false }
-  })
-  return NextResponse.json({ success: true, user }, { status: 201 })
-}
+    const [users, total] = await prisma.$transaction([
+      prisma.user.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+      prisma.user.count({ where }),
+    ]);
 
-export async function PUT(req: Request) {
-  const admin = await requireAdmin(req)
-  if (!(admin && typeof admin === 'object')) return admin as NextResponse
-  let parsedBody: unknown;
-  try { parsedBody = await req.json(); } catch {
-    return NextResponse.json({ success: false, code: 'INVALID_JSON', message: 'Invalid JSON' }, { status: 400 });
+    return NextResponse.json({
+      success: true,
+      users,
+      meta: { total, page, limit, totalPages: Math.ceil(total/limit) },
+    });
+  } catch (err) {
+    console.error('🔥 GET /api/admin/users Error:', err);
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
-  const updateSchema = z.object({ userId: z.string(), approved: z.boolean() });
-  const updateResult = updateSchema.safeParse(parsedBody);
-  if (!updateResult.success) {
-    return NextResponse.json({ success: false, code: 'INVALID_INPUT', message: 'Invalid input' }, { status: 400 });
+};
+
+export const GET = withAuth(getUsers);
+
+// Handler สำหรับสร้างผู้ใช้ใหม่ (Admin)
+const createUserSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(6),
+  role: z.nativeEnum(Role),
+  approved: z.boolean().default(false),
+});
+
+const createUser: AuthenticatedApiHandler = async (req, _ctx, session) => {
+  if (session.role !== 'ADMIN') {
+    return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
-  const { userId, approved } = updateResult.data;
   try {
-    const user = await prisma.user.update({ where: { id: userId }, data: { approved } })
-    return NextResponse.json({ success: true, user })
-  } catch (error: unknown) {
-    console.error('User PUT error:', error);
-    return NextResponse.json({ success: false, code: 'UPDATE_FAILED', message: 'Update failed' }, { status: 500 })
+    const body = await req.json();
+    const parsed = createUserSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, error: 'Invalid data', details: parsed.error.flatten() }, { status: 400 });
+    }
+    const { name, email, password, role, approved } = parsed.data;
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({ data: { name, email, password: hashed, role, approved } });
+    return NextResponse.json({ success: true, user }, { status: 201 });
+  } catch (err) {
+    console.error('🔥 POST /api/admin/users Error:', err);
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
-}
+};
 
-export async function DELETE(req: Request) {
-  const admin = await requireAdmin(req)
-  if (!(admin && typeof admin === 'object')) return admin as NextResponse
-  let parsedBody: unknown;
-  try { parsedBody = await req.json(); } catch {
-    return NextResponse.json({ success: false, code: 'INVALID_JSON', message: 'Invalid JSON' }, { status: 400 });
-  }
-  const deleteSchema = z.object({ userId: z.string() });
-  const deleteResult = deleteSchema.safeParse(parsedBody);
-  if (!deleteResult.success) {
-    return NextResponse.json({ success: false, code: 'INVALID_INPUT', message: 'Invalid input' }, { status: 400 });
-  }
-  const { userId } = deleteResult.data;
-  try {
-    await prisma.user.delete({ where: { id: userId } })
-    return NextResponse.json({ success: true }, { status: 204 })
-  } catch (error: unknown) {
-    console.error('User DELETE error:', error);
-    return NextResponse.json({ success: false, code: 'DELETE_FAILED', message: 'Delete failed' }, { status: 500 })
-  }
-}
+export const POST = withAuth(createUser);

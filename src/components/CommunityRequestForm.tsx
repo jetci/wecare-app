@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,14 +33,34 @@ export default function CommunityRequestForm() {
     defaultValues: { companions: 0 },
   });
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
+
   const onSubmit = async (data: FormData) => {
-    // TODO: integrate API POST /api/requests
-    console.log(data);
-    reset();
+    // Integrate API POST /api/community/requests
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    try {
+      const res = await fetch('/api/community/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const errorRes = await res.json();
+        throw new Error(errorRes.error || 'ไม่สามารถสร้างคำขอได้');
+      }
+      setSubmitSuccess(true);
+      reset();
+    } catch (e: any) {
+      setSubmitError(e.message);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      {submitError && <p className="text-red-600">{submitError}</p>}
+      {submitSuccess && <p className="text-green-600">สร้างคำขอสำเร็จ</p>}
       {/* Section 1: User Info */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">ข้อมูลผู้ขอรับบริการ</h2>

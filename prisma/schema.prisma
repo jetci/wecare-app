@@ -9,72 +9,68 @@ generator client {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  prefix      String?
-  firstName   String
-  lastName    String
-  nationalId  String   @unique
-  phone       String?
-  houseNumber String?  // บ้านเลขที่
-  village     String?  // หมู่ที่
-  subdistrict String?  // ตำบล
-  district    String?  // อำเภอ
-  province    String?  // จังหวัด
-  avatarUrl   String?  // URL รูปภาพผู้ใช้
-  password    String
-  role        Role
-  position    Position
-  approved    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  driverRides Ride[]   @relation("DriverRides")   // เป็นคนขับใน Ride
-  assignedCases Patient[] @relation("AssignedPatients")
+  id              String    @id @default(uuid())
+  prefix          String?
+  firstName       String
+  lastName        String
+  nationalId      String    @unique
+  phone           String?
+  houseNumber     String?   // บ้านเลขที่
+  village         String?   // หมู่ที่
+  subdistrict     String?   // ตำบล
+  district        String?   // อำเภอ
+  province        String?   // จังหวัด
+  avatarUrl       String?   // URL รูปภาพผู้ใช้
+  password        String
+  role            Role
+  position        Position
+  approved        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  driverRides     Ride[]    @relation("DriverRides")
+  
+  managedPatients Patient[] @relation("ManagedPatients")
 }
 
 model Patient {
-  id           String   @id @default(uuid())
-  prefix       String
-  firstName    String
-  lastName     String
-  nationalId   String   @unique
-  phone        String
-  dob          DateTime
-  age          Int
-  gender       String
-  bloodGroup   String
-  addrNo       String
-  addrMoo      String
-  villageName  String
-  copyAddr     Boolean  @default(false)
-  currNo       String?
-  currMoo      String?
-  currVillageName String?
-  currSub      String?
-  currDist     String?
-  currProv     String?
-  photoCare    String?
-  // Added patient photo
-  photo        String?
-  patientGroup String
-  otherGroup   String?
-  statusHelpSelf      Boolean @default(false)
-  statusCannotHelpSelf Boolean @default(false)
-  needTool            Boolean @default(false)
-  toolRemark          String?
-  remark              String?
-  // Attached document file names
-  docCertHead        String?
-  docCertBed         String?
-  docAppointment     String?
-  docOther           String?
-  // พิกัดแผนที่
-  latitude           Float?
-  longitude          Float?
-  locationLabel      String?
-  assignedToId String?
-  assignedTo   User?    @relation("AssignedPatients", fields: [assignedToId], references: [id])
-  approved     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  rides        Ride[]   @relation("RidePatient")
+  id                    String   @id @default(uuid())
+  prefix                String
+  firstName             String
+  lastName              String
+  nationalId            String   @unique
+  bloodType             String?
+  birthDate             DateTime
+
+  // ID Card Address
+  idCardAddress_houseNumber String
+  idCardAddress_moo         String
+  idCardAddress_phone       String?
+
+  // Current Address
+  useIdCardAddress           Boolean  @default(false)
+  currentAddress_houseNumber String?
+  currentAddress_moo         String?
+  currentAddress_tambon      String?
+  currentAddress_amphoe      String?
+  currentAddress_changwat    String?
+  currentAddress_phone       String?
+
+  // Patient Group
+  patientGroup           String
+  otherPatientGroup      String?
+
+  // Pickup Location
+  pickupLocation_lat      Float
+  pickupLocation_lng      Float
+  notes                   String?
+
+  // Relations
+  managedByUserId        String
+  managedByUser          User     @relation("ManagedPatients", fields: [managedByUserId], references: [id])
+  rides                  Ride[]   @relation("RidePatient")
+
+  createdAt               DateTime @default(now())
 }
 
 model Ride {
@@ -91,6 +87,7 @@ model Ride {
 }
 
 enum Role {
+  DEVELOPER
   COMMUNITY
   DRIVER
   HEALTH_OFFICER

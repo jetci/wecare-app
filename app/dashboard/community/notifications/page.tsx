@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useMemo } from 'react';
 import useSWR from 'swr';
-import { Spinner } from '../../../../components/ui/Spinner';
+import { Spinner } from '@/components/ui/Spinner';
 
 export interface Notification {
   id: string;

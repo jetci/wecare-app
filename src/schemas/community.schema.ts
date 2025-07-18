@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Query schema for GET /api/community/requests and /api/community/history
 export const CommunityRequestsQuerySchema = z.object({
-  nationalId: z.string().length(13),
+  nationalId: z.string().length(13).optional(),
 });
 
 // Community request item
@@ -27,3 +27,6 @@ export const CreateCommunityRequestBodySchema = z.object({
 });
 
 export const CreateCommunityRequestResponseSchema = CommunityRequestSchema;
+
+// TypeScript type for community request
+export type CommunityRequest = z.infer<typeof CommunityRequestSchema>;

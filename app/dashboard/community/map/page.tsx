@@ -2,12 +2,12 @@
 import React, { useState } from 'react';
 import useSWR from 'swr';
 import dynamic from 'next/dynamic';
-import type { Location, MapProps } from '../../../../components/dashboard/community/Map';
-import { Spinner } from '../../../../components/ui/Spinner';
+import type { Location, MapProps } from '@/components/dashboard/community/Map';
+import { Spinner } from '@/components/ui/Spinner';
 import RoleGuard from '@/components/RoleGuard';
 import { Role } from '@/types/roles';
 
-const CommunityMap = dynamic<MapProps>(() => import('../../../../components/dashboard/community/Map'), {
+const CommunityMap = dynamic<MapProps>(() => import('@/components/dashboard/community/Map'), {
   ssr: false,
   loading: () => <div role="status" className="p-4"><Spinner /></div>
 });

@@ -1,7 +1,9 @@
 "use client";
+'use client';
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { apiFetch } from '@/lib/api';
@@ -12,9 +14,12 @@ interface FormData {
 }
 
 export default function LoginForm() {
+  const { login } = useAuth();
+  const [redirecting, setRedirecting] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>();
   const [errorMessage, setErrorMessage] = useState<string>('');
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     localStorage.removeItem('accessToken');
@@ -31,17 +36,28 @@ export default function LoginForm() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || json.message || 'Login failed');
-      localStorage.setItem('accessToken', json.accessToken);
+      login(json.accessToken);
       document.cookie = `accessToken=${json.accessToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       if (json.refreshToken) {
         document.cookie = `refreshToken=${json.refreshToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       }
-      router.push(`/dashboard/${json.user.role.toLowerCase()}`);
+      setRedirecting(true);
+      // Redirect intelligently based on original destination
+      const callbackUrl = searchParams.get('callbackUrl');
+      router.push(callbackUrl || `/dashboard/${json.user.role.toLowerCase()}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
       setErrorMessage(message);
     }
   };
+
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-lg">
+        กำลังไปยังหน้า Dashboard ตามบทบาท...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useCommunityHistory } from '../../../../hooks/useCommunityHistory';
-import type { TimelineProps } from '../../../../components/dashboard/community/Timeline';
-import { Spinner } from '../../../../components/ui/Spinner';
-import Timeline from '../../../../components/dashboard/community/Timeline';
+import { useCommunityHistory } from '@/hooks/useCommunityHistory';
+import type { TimelineProps } from '@/components/dashboard/community/Timeline';
+import { Spinner } from '@/components/ui/Spinner';
+import Timeline from '@/components/dashboard/community/Timeline';
 import RoleGuard from '@/components/RoleGuard';
 import { Role } from '@/types/roles';
 

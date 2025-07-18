@@ -3,7 +3,7 @@ import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import DashboardLayout from '@/app/dashboard/layout';
+
 import RoleGuard from '@/components/RoleGuard';
 import MapPicker from '@/components/MapPicker';
 import { Role } from '@/types/roles';
@@ -40,7 +40,7 @@ export default function AddPatientPage() {
 
   return (
     <RoleGuard allowedRoles={[Role.COMMUNITY, Role.DEVELOPER]}>
-      <DashboardLayout role="community">
+      
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
           {/* Section 1: ข้อมูลเบื้องต้น */}
           <div className="bg-white p-4 rounded-lg shadow space-y-4">
@@ -162,7 +162,7 @@ export default function AddPatientPage() {
             <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">บันทึกข้อมูล</button>
           </div>
         </form>
-      </DashboardLayout>
+      
     </RoleGuard>
   );
 }

@@ -22,7 +22,7 @@ export default function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
   const userRole = role ? Role[role.toUpperCase() as keyof typeof Role] : undefined;
 
   // Developer bypass for all dashboards
-  if (userRole === Role.DEVELOPER && user?.nationalId === '3500200461028') {
+  if (userRole === Role.DEVELOPER) {
     return <>{children}</>;
   }
 
