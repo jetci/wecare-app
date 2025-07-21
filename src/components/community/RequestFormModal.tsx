@@ -2,10 +2,11 @@
 
 import React, { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { requestFormSchema, type RequestFormData } from '@/schemas/community/request.schema';
 import { useAuth } from '@/context/AuthContext';
+import { usePatients } from '@/hooks/usePatients';
 
 interface RequestFormModalProps {
   isOpen: boolean;
@@ -13,11 +14,17 @@ interface RequestFormModalProps {
   onSuccess: () => void;
 }
 
-export const RequestFormModal = ({ isOpen, onClose, onSuccess }: RequestFormModalProps) => {
+export const RequestFormModal: React.FC<RequestFormModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+}) => {
   const { token } = useAuth();
+  const { patients, isLoading: patientsLoading } = usePatients();
   const [apiError, setApiError] = useState<string | null>(null);
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -36,31 +43,30 @@ export const RequestFormModal = ({ isOpen, onClose, onSuccess }: RequestFormModa
   const onSubmit = async (data: RequestFormData) => {
     setApiError(null);
     try {
-      const response = await fetch('/api/community/requests', {
+      const res = await fetch('/api/community/requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
       });
-
-      if (!response.ok) {
-        const errorResult = await response.json();
-        throw new Error(errorResult.error || 'ไม่สามารถสร้างคำขอได้ กรุณาลองใหม่');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'ไม่สามารถสร้างคำขอได้ กรุณาลองใหม่');
       }
-
       alert('สร้างคำขอสำเร็จ!');
       onSuccess();
       onClose();
-    } catch (error: any) {
-      setApiError(error.message);
+    } catch (e: any) {
+      setApiError(e.message);
     }
   };
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
+        {/* Backdrop */}
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -73,6 +79,7 @@ export const RequestFormModal = ({ isOpen, onClose, onSuccess }: RequestFormModa
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
         </Transition.Child>
 
+        {/* Modal */}
         <div className="fixed inset-0 z-10 overflow-y-auto">
           <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
             <Transition.Child
@@ -86,59 +93,94 @@ export const RequestFormModal = ({ isOpen, onClose, onSuccess }: RequestFormModa
             >
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                 <form onSubmit={handleSubmit(onSubmit)}>
-                  <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                    สร้างคำขอรับบริการใหม่
-                  </Dialog.Title>
-                  <div className="mt-4 space-y-4">
-                    <div>
-                      <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-                        ประเภทบริการ
+                  {/* Patient Selector */}
+                  {patients.length > 0 && (
+                    <div className="mb-4">
+                      <label htmlFor="patientId" className="block text-sm font-medium text-gray-700">
+                        เลือกผู้ป่วย (ถ้ามี)
                       </label>
-                      <select
-                        id="type"
-                        {...register('type')}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      >
-                        <option value="">-- กรุณาเลือก --</option>
-                        <option value="EMERGENCY_VEHICLE">ขอรถพยาบาลฉุกเฉิน</option>
-                        <option value="HEALTH_CHECKUP">นัดหมายตรวจสุขภาพ</option>
-                        <option value="VACCINATION">ขอรับวัคซีน</option>
-                      </select>
-                      {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type.message}</p>}
-                    </div>
-
-                    <div>
-                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                        หัวข้อ/อาการเบื้องต้น
-                      </label>
-                      <input
-                        id="title"
-                        {...register('title')}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                      <Controller
+                        name="patientId"
+                        control={control}
+                        render={({ field }) => (
+                          <select
+                            {...field}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                          >
+                            <option value="">-- เลือก --</option>
+                            {patients.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       />
-                      {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
+                      {errors.patientId && (
+                        <p className="text-red-500 text-xs mt-1">{errors.patientId.message}</p>
+                      )}
                     </div>
+                  )}
 
-                    <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                        รายละเอียดเพิ่มเติม (ถ้ามี)
-                      </label>
-                      <textarea
-                        id="description"
-                        {...register('description')}
-                        rows={4}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                      {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
-                    </div>
-
-                    {apiError && (
-                      <div className="rounded-md bg-red-50 p-4">
-                        <p className="text-sm text-red-700">{apiError}</p>
-                      </div>
+                  {/* Type */}
+                  <div className="mb-4">
+                    <label htmlFor="type" className="block text-sm font-medium text-gray-700">
+                      ประเภทคำขอ
+                    </label>
+                    <select
+                      id="type"
+                      {...register('type')}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      <option value="">-- เลือกประเภท --</option>
+                      <option value="MEDICAL">รักษาพยาบาล</option>
+                      <option value="TRANSPORT">รับส่ง</option>
+                      <option value="OTHER">อื่น ๆ</option>
+                    </select>
+                    {errors.type && (
+                      <p className="text-red-500 text-xs mt-1">{errors.type.message}</p>
                     )}
                   </div>
 
+                  {/* Title */}
+                  <div className="mb-4">
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                      หัวข้อ
+                    </label>
+                    <input
+                      id="title"
+                      {...register('title')}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    {errors.title && (
+                      <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <div className="mb-4">
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                      รายละเอียดเพิ่มเติม (ถ้ามี)
+                    </label>
+                    <textarea
+                      id="description"
+                      {...register('description')}
+                      rows={4}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    {errors.description && (
+                      <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>
+                    )}
+                  </div>
+
+                  {/* API Error */}
+                  {apiError && (
+                    <div className="mb-4 rounded-md bg-red-50 p-4">
+                      <p className="text-sm text-red-700">{apiError}</p>
+                    </div>
+                  )}
+
+                  {/* Buttons */}
                   <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                     <button
                       type="submit"

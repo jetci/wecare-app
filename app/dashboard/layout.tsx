@@ -1,9 +1,11 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Sidebar, SidebarMobile } from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
-import React, { useState } from 'react';
 
 type Props = { children: React.ReactNode };
 
@@ -15,11 +17,29 @@ const LoadingScreen = () => (
 
 export default function DashboardLayout({ children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      const loginUrl = new URL('/login', window.location.origin);
+      loginUrl.searchParams.set('callbackUrl', pathname);
+      router.push(loginUrl.toString());
+    }
+  }, [loading, isAuthenticated, router, pathname]);
+
+  if (loading || !isAuthenticated) {
+    return <LoadingScreen />;
+  }
 
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-100">
-        <SidebarMobile sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <SidebarMobile
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
         <Sidebar />
         <div className="lg:pl-72">
           <Header setSidebarOpen={setSidebarOpen} />

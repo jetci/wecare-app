@@ -39,6 +39,7 @@ model Patient {
   firstName             String
   lastName              String
   nationalId            String   @unique
+  gender                String   // added gender field
   bloodType             String?
   birthDate             DateTime
 

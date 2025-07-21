@@ -1,9 +1,8 @@
 "use client";
 
-
 import React, { Fragment, useState, useEffect, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { patientFormSchema, type PatientFormData } from '@/schemas/community/patient.schema';
 import { useAuth } from '@/context/AuthContext';

@@ -66,9 +66,32 @@ const createCommunityRequest: AuthenticatedApiHandler = async (req, context, ses
   }
 
   try {
-    const payload = CreateCommunityRequestBodySchema.parse(await req.json());
+    const body = await req.json();
+    const { patientId, type, details } = CreateCommunityRequestBodySchema.parse(body);
+
+    // Determine nationalId based on patientId or self-request
+    let nationalId: string;
+    if (patientId) {
+      const patient = await prisma.patient.findUnique({ where: { id: patientId } });
+      if (!patient) {
+        return NextResponse.json({ success: false, error: 'ไม่พบผู้ป่วยดังกล่าว' }, { status: 404 });
+      }
+      nationalId = patient.nationalId;
+    } else {
+      const selfPatient = await prisma.patient.findFirst({ where: { managedByUserId: session.userId } });
+      if (!selfPatient) {
+        return NextResponse.json({ success: false, error: 'ไม่พบข้อมูลผู้ป่วยของผู้ใช้' }, { status: 400 });
+      }
+      nationalId = selfPatient.nationalId;
+    }
+
     const newRequest = await prisma.requestUser.create({
-      data: { ...payload, userId: session.userId, status: 'PENDING' },
+      data: {
+        nationalId,
+        type,
+        details,
+        status: 'PENDING',
+      },
     });
     const result = CreateCommunityRequestResponseSchema.parse(newRequest);
     return NextResponse.json({ success: true, data: result }, { status: 201 });

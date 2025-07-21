@@ -19,8 +19,8 @@ export const patientFormSchema = z.object({
   // Auto-filled gender based on prefix
   gender: z.enum(['ชาย', 'หญิง']),
   
-  // [FIX] ใช้ z.coerce.date เพื่อรับ Date หรือ string
-  birthDate: z.coerce.date({ required_error: 'กรุณาเลือกวันเกิด' }),
+  // [FIX] ใช้ z.date เพื่อรับ Date หรือ string
+  birthDate: z.date({ required_error: 'กรุณาเลือกวันเกิด' }),
   
   bloodType: z.enum(['A', 'B', 'AB', 'O']).optional(),
   
@@ -48,19 +48,11 @@ export const patientFormSchema = z.object({
   notes: z.string().max(200, 'หมายเหตุต้องไม่เกิน 200 ตัวอักษร').optional(),
   basicHealthInfo: z.string().optional(),
 }).refine(data => {
-    if (data.patientGroup === 'อื่นๆ') {
-        return data.otherPatientGroup && data.otherPatientGroup.trim().length > 0;
+    if (data.patientGroup === 'อื่นๆ' && !data.otherPatientGroup?.trim()) {
+        return false;
     }
-    return true;
-}, {
-    message: 'กรุณาระบุรายละเอียดกลุ่มผู้ป่วย',
-    path: ['otherPatientGroup'],
-}).refine(data => {
-    if (!data.useIdCardAddress) {
-        return (
-            data.currentAddress_houseNumber?.trim().length > 0 &&
-            data.currentAddress_moo?.trim().length > 0
-        );
+    if (!data.useIdCardAddress && (!data.currentAddress_houseNumber?.trim() || !data.currentAddress_moo?.trim())) {
+        return false;
     }
     return true;
 }, {

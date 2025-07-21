@@ -21,7 +21,8 @@ export const GetCommunityHistoryResponseSchema = z.array(CommunityRequestSchema)
 
 // Body schema for POST /api/community/requests
 export const CreateCommunityRequestBodySchema = z.object({
-  nationalId: z.string().length(13),
+  patientId: z.string().uuid().optional(),
+  
   type: z.string(),
   details: z.string().optional(),
 });
