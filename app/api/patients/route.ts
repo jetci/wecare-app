@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { withAuth, type AuthenticatedApiHandler } from '@/lib/auth-handler';
+import { rateLimit } from '@/lib/rateLimit';
+import { withAcl } from '@/lib/acl';
 import { patientFormSchema } from '@/schemas/community/patient.schema';
 import { z } from 'zod';
 
@@ -118,5 +120,5 @@ const getPatients: AuthenticatedApiHandler = async (_req, _ctx, session) => {
   }
 };
 
-export const POST = withAuth(createPatient);
-export const GET = withAuth(getPatients);
+export const POST = withAuth(rateLimit(withAcl(createPatient, ['COMMUNITY','OFFICER','ADMIN','DEVELOPER'])));
+export const GET = withAuth(rateLimit(withAcl(getPatients, ['COMMUNITY','OFFICER','ADMIN','DEVELOPER'])));

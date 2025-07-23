@@ -3,6 +3,7 @@
 import { PlusIcon, ClockIcon, CheckCircleIcon, XCircleIcon, InboxIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 import React, { useState, useMemo } from 'react';
 import { RequestFormModal } from '@/components/community/RequestFormModal';
+import MapModal from '@/components/community/MapModal';
 import { AddPatientModal } from '@/components/community/AddPatientModal';
 import { useCommunityRequests } from '@/hooks/useCommunityRequests';
 import { usePatients } from '@/hooks/usePatients';
@@ -17,6 +18,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 export default function CommunityDashboardPage() {
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
   
@@ -53,6 +55,8 @@ export default function CommunityDashboardPage() {
     setIsAddPatientModalOpen(false);
   };
 
+  const mapLocations = useMemo(() => requests.map((r: any) => ({ lat: r.pickupLocation_lat, lng: r.pickupLocation_lng })), [requests]);
+
   const handleCreateRequestSuccess = () => {
     mutateRequests();
     setIsRequestModalOpen(false);
@@ -60,7 +64,32 @@ export default function CommunityDashboardPage() {
   
   const renderContent = () => {
     if (requestsLoading) {
-      return <div className="text-center py-10"><p>กำลังโหลดข้อมูลคำขอ...</p></div>;
+      return (
+        <div className="mt-4 overflow-x-auto w-full rounded-lg bg-white shadow">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">หัวข้อ</th>
+                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">ประเภท</th>
+                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">สถานะ</th>
+                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">ผู้ป่วย</th>
+                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">เพศ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {Array.from({ length: 5 }).map((_, idx) => (
+                <tr key={idx} className="animate-pulse">
+                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-3/4" /></td>
+                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-1/2" /></td>
+                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-1/3" /></td>
+                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-3/4" /></td>
+                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-1/4" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
     }
     if (isError) {
       return <div className="text-center py-10 text-red-500"><p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p></div>;
@@ -76,15 +105,15 @@ export default function CommunityDashboardPage() {
     }
 
     return (
-      <div className="mt-4 overflow-hidden rounded-lg bg-white shadow">
+      <div className="mt-4 overflow-x-auto w-full rounded-lg bg-white shadow">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">หัวข้อ</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ประเภท</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">สถานะ</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ผู้ป่วย</th>
-<th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">เพศ</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">หัวข้อ</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">ประเภท</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">สถานะ</th>
+              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">ผู้ป่วย</th>
+<th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">เพศ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
@@ -109,6 +138,14 @@ export default function CommunityDashboardPage() {
         <div className="sm:flex sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold text-gray-900">ภาพรวมของคุณ</h1>
           <div className="mt-4 sm:mt-0 sm:ml-4 flex items-center gap-x-2">
+              <button
+                type="button"
+                onClick={() => setIsMapModalOpen(true)}
+                disabled={mapLocations.length === 0}
+                className={`inline-flex items-center gap-x-2 rounded-md bg-green-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm ${mapLocations.length === 0 ? 'opacity-50 cursor-not-allowed hover:bg-green-600' : 'hover:bg-green-500'}`}
+              >
+                ดูแผนที่
+              </button>
             <button
               type="button"
               onClick={() => setIsAddPatientModalOpen(true)}
@@ -130,7 +167,7 @@ export default function CommunityDashboardPage() {
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {summaryStats.map((item) => (
-            <div key={item.name} className="overflow-hidden rounded-lg bg-white shadow p-5">
+            <div key={item.name} className="overflow-x-auto rounded-lg bg-white shadow p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <item.icon className="h-6 w-6 text-gray-400" aria-hidden="true" />
@@ -181,6 +218,13 @@ export default function CommunityDashboardPage() {
         isOpen={isAddPatientModalOpen}
         onClose={() => setIsAddPatientModalOpen(false)}
         onSuccess={handleAddPatientSuccess}
+      />
+      <MapModal
+        open={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        locations={mapLocations}
+        center={mapLocations[0] ?? { lat: 0, lng: 0 }}
+        zoom={12}
       />
     </>
   );

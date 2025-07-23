@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { withAuth, type AuthenticatedApiHandler } from '@/lib/auth-handler';
+import { rateLimit } from '@/lib/rateLimit';
+import { withAcl } from '@/lib/acl';
 import { z } from 'zod';
 
 // Schema สำหรับตรวจสอบข้อมูลที่ส่งเข้ามาใน POST request เพื่อจัดการ Action
@@ -80,5 +82,5 @@ const postDriverAction: AuthenticatedApiHandler = async (req, context, session) 
   }
 };
 
-export const GET = withAuth(getDriverCases);
-export const POST = withAuth(postDriverAction);
+export const GET = withAuth(rateLimit(withAcl(getDriverCases, ['DRIVER','DEVELOPER'])));
+export const POST = withAuth(rateLimit(withAcl(postDriverAction, ['DRIVER','DEVELOPER'])));

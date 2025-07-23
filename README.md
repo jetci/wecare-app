@@ -1,3 +1,8 @@
+<!-- BADGES_START -->
+![Community Tests](https://img.shields.io/badge/Tests-0%2F0-lightgrey)
+![Coverage](https://img.shields.io/badge/Coverage-0%25-lightgrey)
+<!-- BADGES_END -->
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

@@ -1,7 +1,9 @@
 'use client';
 
-import React, { Fragment, useState, useEffect, useCallback } from 'react';
+import React, { Fragment, useState, useEffect, useCallback, FC } from 'react';
 import { isValidThaiID } from '@/schemas/community/patient.schema';
+import { differenceInMonths, getYear, getMonth } from 'date-fns';
+import type { Resolver } from 'react-hook-form';
 import { Dialog, Transition } from '@headlessui/react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,11 +12,16 @@ import { useAuth } from '@/context/AuthContext';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { th } from 'date-fns/locale/th';
-import { getYear, getMonth, differenceInYears } from 'date-fns';
+
 import "react-datepicker/dist/react-datepicker.css";
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
 
 registerLocale('th', th);
+
+// Types for MapPicker and Modal props
+interface MapPosition { lat: number; lng: number; }
+interface MapPickerProps { onLocationChange: (lat: number, lng: number) => void; }
+interface AddPatientModalProps { isOpen: boolean; onClose: () => void; onSuccess: () => void; }
 
 const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed";
 
@@ -67,9 +74,9 @@ const CustomHeader = ({
   );
 };
 
-const MapPicker = ({ onLocationChange }: { onLocationChange: (lat: number, lng: number) => void }) => {
+const MapPicker: FC<MapPickerProps> = ({ onLocationChange }) => {
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
-  const { isLoaded } = useJsApiLoader({ id: 'google-map-script', googleMapsApiKey: "AIzaSyA6zSQzVMAwN38_GKW2jQtdmT5Yvs9zHLc", libraries: ["places"] });
+  const { isLoaded } = useJsApiLoader({ id: 'google-map-script', googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!, libraries: ["places"] });
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -99,7 +106,7 @@ const MapPicker = ({ onLocationChange }: { onLocationChange: (lat: number, lng: 
   );
 };
 
-export const AddPatientModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: () => void; }) => {
+export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { token } = useAuth();
   const [isSuccess, setIsSuccess] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -111,7 +118,8 @@ export const AddPatientModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<PatientFormData>({ resolver: zodResolver(patientFormSchema), mode: 'onBlur' });
+  } = useForm<PatientFormData>({ // TODO: Suppress resolver type mismatch warning; improve ZodResolver<T> typing later
+      resolver: zodResolver(patientFormSchema) as Resolver<PatientFormData>, mode: 'onBlur' });
 
   const watchPrefix = watch('prefix');
   const watchPatientGroup = watch('patientGroup');
@@ -119,7 +127,9 @@ export const AddPatientModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
   const watchIdCardAddress = watch(['idCardAddress_houseNumber', 'idCardAddress_moo', 'idCardAddress_phone']);
   const watchBirthDate = watch('birthDate');
   const watchNationalId = watch('nationalId');
-  const calculatedAge = watchBirthDate ? differenceInYears(new Date(), watchBirthDate) : null;
+  const totalMonths = watchBirthDate ? differenceInMonths(new Date(), watchBirthDate) : null;
+  const years = totalMonths != null ? Math.floor(totalMonths / 12) : null;
+  const months = totalMonths != null ? totalMonths % 12 : null;
 
   useEffect(() => {
     if (['นาย', 'เด็กชาย'].includes(watchPrefix)) setValue('gender', 'ชาย');
@@ -173,11 +183,11 @@ export const AddPatientModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                   <div className="sm:col-span-2"><label>คำนำหน้า</label><select {...register('prefix')} className={inputClass}><option value="">--เลือก--</option><option>นาย</option><option>นาง</option><option>นางสาว</option><option>เด็กชาย</option><option>เด็กหญิง</option></select>{errors.prefix && <p className="text-red-500 text-xs mt-1">{errors.prefix.message}</p>}</div>
                   <div className="sm:col-span-2"><label>ชื่อจริง</label><input {...register('firstName')} className={inputClass} />{errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName.message}</p>}</div>
                   <div className="sm:col-span-2"><label>นามสกุล</label><input {...register('lastName')} className={inputClass} />{errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName.message}</p>}</div>
-                  <div className="sm:col-span-3"><label>เลขบัตรประชาชน</label><input {...register('nationalId')} className={inputClass} />{errors.nationalId && <p className="text-red-500 text-xs mt-1">{errors.nationalId.message}</p>}</div>
+                  <div className="sm:col-span-3"><label>เลขบัตรประชาชน</label><input {...register('nationalId')} onKeyDown={(e) => { if (e.key === 'Enter' && watchNationalId && !isValidThaiID(watchNationalId)) e.preventDefault(); }} className={inputClass} />{errors.nationalId && <p className="text-red-500 text-xs mt-1">{errors.nationalId.message}</p>}</div>
                   <div className="sm:col-span-1"><label>เพศ</label><input {...register('gender')} readOnly className={inputClass} /></div>
                   <div className="sm:col-span-2"><label>วัน/เดือน/ปีเกิด</label><Controller control={control} name="birthDate" render={({ field }) => (<DatePicker locale="th" selected={field.value} onChange={(date: Date | null) => field.onChange(date)} maxDate={new Date()} dateFormat="dd/MM/yyyy" className={inputClass} placeholderText="วว/ดด/พศ" renderCustomHeader={(props) => <CustomHeader {...props} />} />)} />{errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate.message}</p>}</div>
                   <div className="sm:col-span-1"><label>กรุ๊ปเลือด</label><select {...register('bloodType')} className={inputClass}><option value="">-</option><option>A</option><option>B</option><option>AB</option><option>O</option></select></div>
-                  <div className="sm:col-span-1"><label>อายุ</label><input value={calculatedAge != null ? `${calculatedAge} ปี` : ''} readOnly className={inputClass} /></div>
+                  <div className="sm:col-span-1"><label>อายุ</label><input value={years != null ? `${years} ปี ${months} เดือน` : ''} readOnly className={inputClass} /></div>
 
                   {/* ID Card Address */}
                   <div className="sm:col-span-6"><h4 className="font-medium text-gray-800">ที่อยู่ตามบัตรประชาชน</h4></div>
@@ -213,7 +223,7 @@ export const AddPatientModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                 {isSuccess && <div className="mt-4 rounded-md bg-green-50 p-4"><p className="text-sm text-green-700">เพิ่มข้อมูลผู้ป่วยสำเร็จ!</p></div>}
 
                 <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                  <button type="submit" disabled={isSubmitting || (watchNationalId && !isValidThaiID(watchNationalId))} className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed sm:col-start-2">
+                  <button type="submit" disabled={isSubmitting || (!!watchNationalId && !isValidThaiID(watchNationalId))} className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed sm:col-start-2">
                     {isSubmitting ? (
                       <>
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

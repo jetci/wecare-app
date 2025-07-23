@@ -3,6 +3,7 @@
 import React from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/context/AuthContext';
+import NotificationDropdown from '@/components/layout/NotificationDropdown';
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -20,7 +21,8 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
       >
         <Bars3Icon className="h-6 w-6" aria-hidden="true" />
       </button>
-      <div className="flex flex-1 justify-end">
+      <div className="flex flex-1 justify-end items-center space-x-4">
+        <NotificationDropdown />
         <button
           onClick={logout}
           className="text-sm font-semibold text-gray-700 hover:text-gray-900"

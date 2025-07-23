@@ -9,39 +9,40 @@ generator client {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  prefix          String?
-  firstName       String
-  lastName        String
-  nationalId      String    @unique
-  phone           String?
-  houseNumber     String?   // บ้านเลขที่
-  village         String?   // หมู่ที่
-  subdistrict     String?   // ตำบล
-  district        String?   // อำเภอ
-  province        String?   // จังหวัด
-  avatarUrl       String?   // URL รูปภาพผู้ใช้
-  password        String
-  role            Role
-  position        Position
-  approved        Boolean   @default(false)
-  createdAt       DateTime  @default(now())
+  id          String   @id @default(uuid())
+  prefix      String?
+  firstName   String
+  lastName    String
+  nationalId  String   @unique
+  phone       String?
+  houseNumber String? // บ้านเลขที่
+  village     String? // หมู่ที่
+  subdistrict String? // ตำบล
+  district    String? // อำเภอ
+  province    String? // จังหวัด
+  avatarUrl   String? // URL รูปภาพผู้ใช้
+  password    String
+  role        Role
+  position    Position
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   // Relations
-  driverRides     Ride[]    @relation("DriverRides")
-  
-  managedPatients Patient[] @relation("ManagedPatients")
+  driverRides Ride[] @relation("DriverRides")
+
+  managedPatients Patient[]      @relation("ManagedPatients")
+  notifications   Notification[] @relation("UserNotifications")
 }
 
 model Patient {
-  id                    String   @id @default(uuid())
-  prefix                String
-  firstName             String
-  lastName              String
-  nationalId            String   @unique
-  gender                String   // added gender field
-  bloodType             String?
-  birthDate             DateTime
+  id         String   @id @default(uuid())
+  prefix     String
+  firstName  String
+  lastName   String
+  nationalId String   @unique
+  gender     String // added gender field
+  bloodType  String?
+  birthDate  DateTime
 
   // ID Card Address
   idCardAddress_houseNumber String
@@ -49,7 +50,7 @@ model Patient {
   idCardAddress_phone       String?
 
   // Current Address
-  useIdCardAddress           Boolean  @default(false)
+  useIdCardAddress           Boolean @default(false)
   currentAddress_houseNumber String?
   currentAddress_moo         String?
   currentAddress_tambon      String?
@@ -58,33 +59,33 @@ model Patient {
   currentAddress_phone       String?
 
   // Patient Group
-  patientGroup           String
-  otherPatientGroup      String?
+  patientGroup      String
+  otherPatientGroup String?
 
   // Pickup Location
-  pickupLocation_lat      Float
-  pickupLocation_lng      Float
-  notes                   String?
+  pickupLocation_lat Float
+  pickupLocation_lng Float
+  notes              String?
 
   // Relations
-  managedByUserId        String
-  managedByUser          User     @relation("ManagedPatients", fields: [managedByUserId], references: [id])
-  rides                  Ride[]   @relation("RidePatient")
+  managedByUserId String
+  managedByUser   User   @relation("ManagedPatients", fields: [managedByUserId], references: [id])
+  rides           Ride[] @relation("RidePatient")
 
-  createdAt               DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Ride {
-  id         String     @id @default(uuid())
-  patientId  String
-  driverId   String?
-  date       DateTime
-  status     RideStatus
-  rating     Int?
-  createdAt  DateTime   @default(now())
+  id        String     @id @default(uuid())
+  patientId String
+  driverId  String?
+  date      DateTime
+  status    RideStatus
+  rating    Int?
+  createdAt DateTime   @default(now())
 
-  patient   Patient    @relation("RidePatient", fields: [patientId], references: [id])
-  driver    User?      @relation("DriverRides", fields: [driverId], references: [id])
+  patient Patient @relation("RidePatient", fields: [patientId], references: [id])
+  driver  User?   @relation("DriverRides", fields: [driverId], references: [id])
 }
 
 enum Role {
@@ -113,16 +114,16 @@ enum RideStatus {
 }
 
 model Area {
-  id        String   @id @default(uuid())
-  province  String
-  district  String
+  id          String  @id @default(uuid())
+  province    String
+  district    String
   subdistrict String?
-  active    Boolean  @default(true)
+  active      Boolean @default(true)
 }
 
 model CaseType {
-  id     String @id @default(uuid())
-  name   String
+  id   String @id @default(uuid())
+  name String
 }
 
 model NotificationTemplate {
@@ -132,7 +133,7 @@ model NotificationTemplate {
 }
 
 model Threshold {
-  key   String  @id
+  key   String @id
   value Float
   unit  String
 }
@@ -146,12 +147,12 @@ model ApiKey {
 
 // Model สำหรับ Community Requests (history)
 model RequestUser {
-  id          String   @id @default(uuid())
-  nationalId  String
-  type        String
-  status      String
-  details     String?  // optional details
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  nationalId String
+  type       String
+  status     String
+  details    String? // optional details
+  createdAt  DateTime @default(now())
 }
 
 // Model สำหรับ Health Officer Appointments
@@ -162,4 +163,16 @@ model Appointment {
   status    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id           String   @id @default(uuid())
+  targetUserId String
+  type         String
+  message      String
+  read         Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  targetUser   User     @relation("UserNotifications", fields: [targetUserId], references: [id])
+
+  @@index([targetUserId])
 }

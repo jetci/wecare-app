@@ -15,7 +15,9 @@ export const patientFormSchema = z.object({
   prefix: z.enum(['นาย', 'นาง', 'นางสาว', 'เด็กชาย', 'เด็กหญิง'], { required_error: 'กรุณาเลือกคำนำหน้า' }),
   firstName: z.string().min(1, 'กรุณากรอกชื่อจริง'),
   lastName: z.string().min(1, 'กรุณากรอกนามสกุล'),
-  nationalId: z.string().refine(isValidThaiID, { message: 'เลขบัตรประชาชนไม่ถูกต้อง' }),
+  nationalId: z.string()
+    .transform((v) => v.replace(/[\s-]/g, ''))
+    .refine(isValidThaiID, { message: 'เลขบัตรประชาชนไม่ถูกต้อง' }),
   // Auto-filled gender based on prefix
   gender: z.enum(['ชาย', 'หญิง']),
   
