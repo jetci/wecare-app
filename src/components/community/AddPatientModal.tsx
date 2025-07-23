@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Fragment, useState, useEffect, useCallback } from 'react';
+import { isValidThaiID } from '@/schemas/community/patient.schema';
 import { Dialog, Transition } from '@headlessui/react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -110,13 +111,14 @@ export const AddPatientModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<PatientFormData>({ resolver: zodResolver(patientFormSchema) });
+  } = useForm<PatientFormData>({ resolver: zodResolver(patientFormSchema), mode: 'onBlur' });
 
   const watchPrefix = watch('prefix');
   const watchPatientGroup = watch('patientGroup');
   const watchUseIdCardAddress = watch('useIdCardAddress');
   const watchIdCardAddress = watch(['idCardAddress_houseNumber', 'idCardAddress_moo', 'idCardAddress_phone']);
   const watchBirthDate = watch('birthDate');
+  const watchNationalId = watch('nationalId');
   const calculatedAge = watchBirthDate ? differenceInYears(new Date(), watchBirthDate) : null;
 
   useEffect(() => {
@@ -211,7 +213,7 @@ export const AddPatientModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                 {isSuccess && <div className="mt-4 rounded-md bg-green-50 p-4"><p className="text-sm text-green-700">เพิ่มข้อมูลผู้ป่วยสำเร็จ!</p></div>}
 
                 <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                  <button type="submit" disabled={isSubmitting} className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed sm:col-start-2">
+                  <button type="submit" disabled={isSubmitting || (watchNationalId && !isValidThaiID(watchNationalId))} className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed sm:col-start-2">
                     {isSubmitting ? (
                       <>
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

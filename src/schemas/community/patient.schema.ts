@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Helper function for Thai National ID checksum validation
-const isValidThaiID = (id: string) => {
+export const isValidThaiID = (id: string) => {
   if (!/^\d{13}$/.test(id)) return false;
   let sum = 0;
   for (let i = 0; i < 12; i++) {
