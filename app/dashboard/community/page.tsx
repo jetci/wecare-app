@@ -29,16 +29,16 @@ export default function CommunityDashboardPage() {
     if (selectedPatientId === 'all') {
       return requests;
     }
-    return requests.filter((req: any) => req.patientId === selectedPatientId);
+    return requests.filter((req: any) => req.nationalId === selectedPatientId);
   }, [requests, selectedPatientId]);
 
   // Map of patientId to patient full name
   const patientMap = useMemo(() => Object.fromEntries(
-    patients.map((p: any) => [p.id, `${p.firstName} ${p.lastName}`])
+    patients.map((p: any) => [p.nationalId, `${p.firstName} ${p.lastName}`])
   ), [patients]);
   // Map of patientId to gender
   const patientGenderMap = useMemo(() => Object.fromEntries(
-    patients.map((p: any) => [p.id, p.gender])
+    patients.map((p: any) => [p.nationalId, p.gender])
   ), [patients]);
 
 
@@ -93,8 +93,8 @@ export default function CommunityDashboardPage() {
                 <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{request.title}</td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{request.type}</td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500"><StatusBadge status={request.status} /></td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{patientMap[request.patientId] || '-'}</td>
-<td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{patientGenderMap[request.patientId] || '-'}</td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{patientMap[request.nationalId] || '-'}</td>
+<td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{patientGenderMap[request.nationalId] || '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -154,15 +154,15 @@ export default function CommunityDashboardPage() {
             {patients.length > 0 && (
               <div className="mt-4 sm:mt-0">
                 <label htmlFor="patient-selector" className="sr-only">เลือกผู้ป่วย</label>
-                <select
-                  id="patient-selector"
-                  value={selectedPatientId}
-                  onChange={(e) => setSelectedPatientId(e.target.value)}
+                <select 
+                  id="patient-selector" 
+                  value={selectedPatientId} 
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedPatientId(e.target.value)} 
                   className="rounded-md border-gray-300 shadow-sm"
                 >
                   <option value="all">ดูทั้งหมด</option>
                   {patients.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
+                    <option key={p.nationalId} value={p.nationalId}>{p.firstName} {p.lastName}</option>
                   ))}
                 </select>
               </div>

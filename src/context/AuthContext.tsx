@@ -33,9 +33,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const storedToken = localStorage.getItem('accessToken');
       if (storedToken) {
         login(storedToken);
+      } else if (process.env.NEXT_PUBLIC_DEV_USER_ID) {
+        const devId = process.env.NEXT_PUBLIC_DEV_USER_ID;
+        setUser({ userId: devId, role: 'DEVELOPER', iat: Date.now(), exp: Date.now() + 1000 * 60 * 60 * 24 });
       }
     } catch (err) {
-      // [FIX] แก้ไข Syntax Error ใน console.error
       console.error("Init auth error:", err);
     } finally {
       setLoading(false);

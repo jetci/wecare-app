@@ -32,14 +32,17 @@ const createPatient: AuthenticatedApiHandler = async (req, context, session) => 
 
   try {
     const body = await req.json();
+    console.log('🛠️ POST /api/patients body:', body);
     // ใช้ Schema สำหรับ API ในการ Parse และ Transform ข้อมูล
     const parsedData = apiPatientSchema.safeParse(body);
+    console.log('🛠️ POST /api/patients parsedData:', parsedData);
 
     if (!parsedData.success) {
       return NextResponse.json({ success: false, error: 'Invalid input data', details: parsedData.error.flatten() }, { status: 400 });
     }
     
     const data = parsedData.data;
+    console.log('🛠️ POST /api/patients data for create:', data);
 
     // ตรวจสอบความซ้ำกันของ nationalId
     const existingPatient = await prisma.patient.findUnique({
@@ -51,32 +54,36 @@ const createPatient: AuthenticatedApiHandler = async (req, context, session) => 
 
     const newPatient = await prisma.patient.create({
       data: {
-        ...data,
-        // birthDate ตอนนี้เป็น Date object ที่พร้อมสำหรับ Prisma แล้ว
-        birthDate: data.birthDate,
-        // gender ถูกส่งมาจากฟอร์มที่ผ่านการคำนวณแล้ว
+        prefix: data.prefix,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        nationalId: data.nationalId,
         gender: data.gender,
-
-        // กำหนดค่าที่อยู่ตามบัตรประชาชน (ค่าคงที่)
-        idCardAddress_tambon: 'เวียง',
-        idCardAddress_amphoe: 'ฝาง',
-        idCardAddress_changwat: 'เชียงใหม่',
-
-        // กำหนดค่าที่อยู่ปัจจุบันตามเงื่อนไข
+        bloodType: data.bloodType,
+        birthDate: data.birthDate,
+        // ID Card Address
+        idCardAddress_houseNumber: data.idCardAddress_houseNumber,
+        idCardAddress_moo: data.idCardAddress_moo,
+        idCardAddress_phone: data.idCardAddress_phone,
+        // Current Address
+        
         currentAddress_houseNumber: data.useIdCardAddress ? data.idCardAddress_houseNumber : data.currentAddress_houseNumber,
         currentAddress_moo: data.useIdCardAddress ? data.idCardAddress_moo : data.currentAddress_moo,
-        currentAddress_tambon: data.useIdCardAddress ? 'เวียง' : data.currentAddress_tambon,
-        currentAddress_amphoe: data.useIdCardAddress ? 'ฝาง' : data.currentAddress_amphoe,
-        currentAddress_changwat: data.useIdCardAddress ? 'เชียงใหม่' : data.currentAddress_changwat,
+        currentAddress_tambon: data.useIdCardAddress ? data.idCardAddress_tambon : data.currentAddress_tambon,
+        currentAddress_amphoe: data.useIdCardAddress ? data.idCardAddress_amphoe : data.currentAddress_amphoe,
+        currentAddress_changwat: data.useIdCardAddress ? data.idCardAddress_changwat : data.currentAddress_changwat,
         currentAddress_phone: data.useIdCardAddress ? data.idCardAddress_phone : data.currentAddress_phone,
-
+        // Patient Group
+        patientGroup: data.patientGroup,
         otherPatientGroup: data.patientGroup === 'อื่นๆ' ? data.otherPatientGroup : null,
-
-        // สร้างความสัมพันธ์กับผู้ใช้ที่ทำการเพิ่มข้อมูลนี้
+        // Pickup Location
+        pickupLocation_lat: data.pickupLocation_lat,
+        pickupLocation_lng: data.pickupLocation_lng,
+        notes: data.notes,
+        // Relation to User
         managedByUserId: session.userId,
       }
     });
-
     return NextResponse.json({ success: true, patient: newPatient }, { status: 201 });
 
   } catch (error) {
@@ -95,6 +102,7 @@ const getPatients: AuthenticatedApiHandler = async (_req, _ctx, session) => {
       where: { managedByUserId: session.userId },
       orderBy: { createdAt: 'desc' },
       select: {
+        nationalId: true,
         id: true,
         firstName: true,
         lastName: true,

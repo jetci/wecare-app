@@ -28,6 +28,9 @@ export const patientFormSchema = z.object({
   idCardAddress_houseNumber: z.string().min(1, 'กรุณากรอกบ้านเลขที่'),
   idCardAddress_moo: z.string().min(1, 'กรุณาเลือกหมู่'),
   idCardAddress_phone: z.string().regex(/^\d*$/, 'กรุณากรอกเฉพาะตัวเลข').optional(),
+  idCardAddress_tambon: z.string().min(1, 'กรุณากรอกตำบล'),
+  idCardAddress_amphoe: z.string().min(1, 'กรุณากรอกอำเภอ'),
+  idCardAddress_changwat: z.string().min(1, 'กรุณากรอกจังหวัด'),
 
   // Current Address
   useIdCardAddress: z.boolean().default(false),
