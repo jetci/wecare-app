@@ -15,6 +15,7 @@ model User {
   lastName    String
   nationalId  String   @unique
   phone       String?
+  birthDate   DateTime? // user's birth date
   houseNumber String? // บ้านเลขที่
   village     String? // หมู่ที่
   subdistrict String? // ตำบล

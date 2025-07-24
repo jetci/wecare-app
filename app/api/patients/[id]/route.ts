@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import prisma from '@/lib/prisma'
-import { patientSchema } from '../route'
+import { PatientProfileSchema } from '@/schemas/patientProfile.schema' // use independent patient profile schema
 
 const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
 
@@ -29,7 +29,7 @@ export async function PUT(req: NextRequest, { params: { id } }: { params: { id: 
 
   let data: any
   try { data = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
-  const result = patientSchema.partial().safeParse(data)
+  const result = PatientProfileSchema.partial().safeParse(data)
   if (!result.success) return NextResponse.json({ error: result.error.flatten() }, { status: 400 })
 
   const pd = result.data

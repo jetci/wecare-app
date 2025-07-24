@@ -3,11 +3,15 @@ import { jwtVerify } from 'jose';
 import { PrismaClient } from '@prisma/client';
 import { Buffer } from 'buffer';
 import fs from 'fs/promises';
-import * as path from 'path';
+import { UserProfileSchema } from '@/schemas/userProfile.schema';
+
+// Schema for update payload (exclude email and avatarFile)
+const UpdateProfileSchema = UserProfileSchema.omit({ email: true, avatarFile: true });
+import path from 'path';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
   // Dev/Test bypass
   if (process.env.NODE_ENV !== 'production' || new URL(request.url).searchParams.get('e2e') === 'true') {
     return NextResponse.json({
@@ -43,7 +47,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       where: { id: userId },
       select: {
         id: true, prefix: true, firstName: true, lastName: true,
-        nationalId: true, phone: true, houseNumber: true, village: true,
+        nationalId: true, phone: true, birthDate: true, houseNumber: true, village: true,
         subdistrict: true, district: true, province: true,
         avatarUrl: true, role: true, approved: true
       }
@@ -58,6 +62,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           lastName: userJwt.lastName || '',
           email,
           nationalId: userJwt.nationalId || '',
+          birthDate: userJwt.birthDate || '',
           phone: userJwt.phone || '',
           address: { houseNumber: '', village: '', subdistrict: '', district: '', province: '' },
           avatarUrl: '',
@@ -72,6 +77,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       user: {
         ...rest,
         email,
+        birthDate: dbUser.birthDate.toISOString().split('T')[0],
         address: { houseNumber, village, subdistrict, district, province },
         avatarUrl
       }
@@ -100,11 +106,14 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       ? await request.json()
       : Object.fromEntries(await request.formData().then(f => f.entries()));
 
-    const { prefix, firstName, lastName, phone, houseNumber, village, subDistrict, district, province, avatar } = body;
-    if ([prefix, firstName, lastName, phone, houseNumber, village, subDistrict, district, province]
-        .some(f => typeof f !== 'string')) {
-      return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
+    let parsedData;
+    try {
+      parsedData = UpdateProfileSchema.parse(body);
+    } catch (e: any) {
+      return NextResponse.json({ error: e.errors }, { status: 400 });
     }
+    const { fullName, phone, nationalId, birthDate } = parsedData;
+    const avatar = body.avatar;
 
     let avatarUrl: string | undefined;
     if (avatar instanceof File) {
@@ -116,12 +125,19 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       avatarUrl = `/uploads/${filename}`;
     }
 
+    const names = fullName.trim().split(/\s+/);
+    const firstName = names.shift() || '';
+    const lastName = names.join(' ');
+
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
-        prefix, firstName, lastName, phone,
-        houseNumber, village, subdistrict: subDistrict, district, province,
-        ...(avatarUrl ? { avatarUrl } : {})
+        firstName,
+        lastName,
+        phone,
+        nationalId,
+        birthDate: new Date(birthDate),
+        ...(avatarUrl ? { avatarUrl } : {}),
       }
     });
 

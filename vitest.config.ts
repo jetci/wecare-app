@@ -7,10 +7,7 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, 'src') },
   },
   test: {
-      include: [
-        'src/app/dashboard/community/**/*.spec.tsx',
-        'src/test/**/*.spec.tsx'
-      ],
+      include: ['src/**/*.{test,spec}.{js,ts,tsx}', 'app/**/*.{test,spec}.{js,ts,tsx}'],
       // ปิดหลายเธรดเพื่อป้องกันหน่วยความจำล้น
       // @ts-ignore
       threads: false,
