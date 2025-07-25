@@ -41,7 +41,7 @@ describe('EditPatientPage Unit Tests', () => {
     expect(await screen.findByText('กรุณากรอกชื่อ-นามสกุลผู้ป่วย')).toBeInTheDocument();
     expect(screen.getByText('กรุณากรอกหมายเลขโรงพยาบาล')).toBeInTheDocument();
     expect(screen.getByText('เลขบัตรประชาชนต้องมี 13 หลัก')).toBeInTheDocument();
-    expect(screen.getByText('วันเกิดไม่ถูกต้อง')).toBeInTheDocument();
+    expect(screen.getByText('รูปแบบวันที่ต้องเป็น dd-MM-yyyy')).toBeInTheDocument();
   });
 
   it('does not submit when form is invalid', async () => {

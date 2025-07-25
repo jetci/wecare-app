@@ -3,8 +3,8 @@ import prisma from '@/lib/prisma';
 import { withAuth, type AuthenticatedApiHandler } from '@/lib/auth-handler';
 import { rateLimit } from '@/lib/rateLimit';
 import { withAcl } from '@/lib/acl';
-import { patientFormSchema } from '@/schemas/community/patient.schema';
-import { z } from 'zod';
+import { PatientProfileSchema } from '@/schemas/patientProfile.schema';
+
 
 // ฟังก์ชันสำหรับแปลงคำนำหน้าเป็นเพศ
 const getGenderFromPrefix = (prefix: string): 'ชาย' | 'หญิง' => {
@@ -14,13 +14,13 @@ const getGenderFromPrefix = (prefix: string): 'ชาย' | 'หญิง' => {
   return 'หญิง';
 };
 
-// Schema for API: preprocess birthDate string into Date before validation
-const apiPatientSchema = z.preprocess((body) => {
-  if (body && typeof (body as any).birthDate === 'string') {
-    return { ...(body as any), birthDate: new Date((body as any).birthDate) };
+
+
+  
+    
   }
-  return body;
-}, patientFormSchema);
+  
+
 
 /**
  * Handler สำหรับสร้างข้อมูลผู้ป่วยใหม่
@@ -34,16 +34,28 @@ const createPatient: AuthenticatedApiHandler = async (req, context, session) => 
 
   try {
     const body = await req.json();
+    // Validate core patient profile fields
+    const validation = PatientProfileSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ success: false, error: 'Invalid input data', details: validation.error.flatten() }, { status: 400 });
+    }
+    const profile = validation.data;
+    // Parse Buddhist date dd-MM-yyyy to Gregorian Date
+    const [dd, mm, byear] = profile.birthDate.split('-').map(Number);
+    const birthDate = new Date(byear - 543, mm - 1, dd);
+    console.log('🛠️ POST /api/patients validated profile:', profile);
     console.log('🛠️ POST /api/patients body:', body);
-    // ใช้ Schema สำหรับ API ในการ Parse และ Transform ข้อมูล
-    const parsedData = apiPatientSchema.safeParse(body);
-    console.log('🛠️ POST /api/patients parsedData:', parsedData);
+    
+    
+    
 
-    if (!parsedData.success) {
-      return NextResponse.json({ success: false, error: 'Invalid input data', details: parsedData.error.flatten() }, { status: 400 });
+    
+      
     }
     
-    const data = parsedData.data;
+    // Use body for additional fields, profile for validated core fields
+    const data = body; // keep raw for other properties
+    console.log('🛠️ POST /api/patients data for create:', data);
     console.log('🛠️ POST /api/patients data for create:', data);
 
     // ตรวจสอบความซ้ำกันของ nationalId
@@ -62,7 +74,7 @@ const createPatient: AuthenticatedApiHandler = async (req, context, session) => 
         nationalId: data.nationalId,
         gender: data.gender,
         bloodType: data.bloodType,
-        birthDate: data.birthDate,
+        birthDate: birthDate,
         // ID Card Address
         idCardAddress_houseNumber: data.idCardAddress_houseNumber,
         idCardAddress_moo: data.idCardAddress_moo,
@@ -131,4 +143,7 @@ const getPatients: AuthenticatedApiHandler = async (req, _ctx, session) => {
 };
 
 export const POST = withAuth(rateLimit(withAcl(createPatient, ['COMMUNITY','OFFICER','ADMIN','DEVELOPER'])));
+
+// Export for unit testing
+export { createPatient };
 export const GET = withAuth(rateLimit(withAcl(getPatients, ['COMMUNITY','OFFICER','ADMIN','DEVELOPER'])));

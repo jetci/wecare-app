@@ -1,18 +1,38 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { NewRequestSchema, NewRequestForm } from '@/schemas/newRequest.schema';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import * as localeTh from 'date-fns/locale/th';
+
+// Derive actual locale object (handle default export compatibility)
+const thLocale = ('default' in localeTh ? (localeTh as any).default : localeTh);
+
+
+import { format } from 'date-fns';
+import 'react-datepicker/dist/react-datepicker.css';
+
+registerLocale('th', thLocale);
+
+// Helper: format Date to 'dd-MM-yyyy' Buddhist year
+function toBuddhistDateString(d: Date): string {
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear() + 543;
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+// Helper: parse 'dd-MM-yyyy' Buddhist year to Date or null
+function parseBuddhistDate(value: string): Date | null {
+  const [dd, mm, yyyy] = value.split('-').map(Number);
+  if (!dd || !mm || !yyyy) return null;
+  return new Date(yyyy - 543, mm - 1, dd);
+}
 
 export default function NewRequestPage() {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    watch,
-    setValue,
-  } = useForm<NewRequestForm>({
+  const { register, handleSubmit, control, watch, setValue, formState: { errors, isSubmitting } } = useForm<NewRequestForm>({
     resolver: zodResolver(NewRequestSchema),
   });
 
@@ -26,16 +46,9 @@ export default function NewRequestPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
 
-  const watchDate = watch('serviceDate');
-  const displayDate = watchDate
-    ? (() => {
-        const d = new Date(watchDate);
-        const day = d.getDate();
-        const month = d.getMonth() + 1;
-        const year = d.getFullYear() + 543;
-        return `${day}/${month}/${year}`;
-      })()
-    : '';
+  // Format a Date to Thai Buddhist year display
+  const formatBuddhist = (date: Date) =>
+    format(date, 'dd MMMM yyyy', { locale: thLocale }).replace(/\d{4}$/, y => String(Number(y) + 543));
 
   const handleSearch = async () => {
     const nid = watch('nationalId');
@@ -55,7 +68,6 @@ export default function NewRequestPage() {
         patientGroup: p.patientGroup,
         pickupLocation: { lat: p.pickupLocation_lat, lng: p.pickupLocation_lng },
       });
-      // set read-only values
       setValue('nationalId', nid);
     } catch (e: any) {
       setSearchError(e.message);
@@ -76,14 +88,11 @@ export default function NewRequestPage() {
         const err = await res.json();
         throw new Error(err.error || 'สร้างคำขอไม่สำเร็จ');
       }
-      // success
       alert('สร้างคำขอสำเร็จ');
     } catch (e: any) {
       alert(e.message);
     }
   };
-
-  const today = new Date().toISOString().split('T')[0];
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -139,13 +148,35 @@ export default function NewRequestPage() {
 
       <div>
         <label>วันที่ต้องการใช้บริการ</label>
-        <input
-          type="date"
-          {...register('serviceDate')}
-          min={today}
-          className="border p-2 w-full"
+        <Controller
+          control={control}
+          name="serviceDate"
+          render={({ field }) => (
+            <DatePicker
+              {...field}
+              locale="th"
+              dateFormat="dd-MM-yyyy"
+              selected={field.value ? parseBuddhistDate(field.value) : null}
+              onChange={(date: Date | null) => field.onChange(date ? toBuddhistDateString(date) : '')}
+              minDate={new Date()}
+              className="border p-2 w-full"
+              renderCustomHeader={({ date, decreaseMonth, increaseMonth }) => (
+                <div className="flex items-center justify-between px-2 py-1">
+                  <button type="button" onClick={decreaseMonth}>&lt;</button>
+                  <span className="mx-2">
+                    {format(date, 'LLLL', { locale: thLocale })} {date.getFullYear() + 543}
+                  </span>
+                  <button type="button" onClick={increaseMonth}>&gt;</button>
+                </div>
+              )}
+            />
+          )}
         />
-        {displayDate && <p className="text-sm">วันที่เลือก: {displayDate}</p>}
+        {watch('serviceDate') && (
+          <p className="mt-1 text-gray-700">{watch('serviceDate')}
+            {formatBuddhist(new Date(watch('serviceDate')!))}
+          </p>
+        )}
         {errors.serviceDate && <p className="text-red-500">{errors.serviceDate.message}</p>}
       </div>
 

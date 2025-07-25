@@ -10,15 +10,12 @@ export const NewRequestSchema = z.object({
     .refine((val) => nationalIdRegex.test(val), {
       message: 'เลขบัตรประชาชนต้องมี 13 หลัก',
     }),
-  serviceDate: z
-    .string()
+  serviceDate: z.string()
+    .regex(/^\d{2}-\d{2}-\d{4}$/, { message: 'รูปแบบวันที่ต้องเป็น dd-MM-yyyy' })
     .refine((val) => {
-      const d = new Date(val);
-      const today = new Date();
-      // set time to midnight
-      today.setHours(0, 0, 0, 0);
-      return !isNaN(d.getTime()) && d >= today;
-    }, { message: 'เลือกวันที่ปัจจุบันหรืออนาคตเท่านั้น' }),
+      const [dd, mm, yyyy] = val.split('-').map(Number);
+      return yyyy >= 2500 && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31;
+    }, { message: 'ปีต้องไม่น้อยกว่า 2500 และรูปแบบต้องถูกต้อง' }),
   requestType: z.enum([
     'รับส่งผู้ป่วย',
     'ปรึกษาแพทย์',
