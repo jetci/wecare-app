@@ -98,7 +98,17 @@ const createPatient: AuthenticatedApiHandler = async (req, context, session) => 
  * Handler สำหรับดึงข้อมูลผู้ป่วยที่อยู่ในความดูแลของผู้ใช้
  * GET /api/patients
  */
-const getPatients: AuthenticatedApiHandler = async (_req, _ctx, session) => {
+const getPatients: AuthenticatedApiHandler = async (req, _ctx, session) => {
+  // If nationalId provided, return specific patient
+  const nationalId = req.nextUrl.searchParams.get('nationalId');
+  if (nationalId) {
+    const patient = await prisma.patient.findUnique({ where: { nationalId } });
+    if (!patient || patient.managedByUserId !== session.userId) {
+      return NextResponse.json({ success: false, error: 'ไม่พบผู้ป่วย' }, { status: 404 });
+    }
+    return NextResponse.json({ success: true, patient });
+  }
+
   try {
     const patients = await prisma.patient.findMany({
       where: { managedByUserId: session.userId },
