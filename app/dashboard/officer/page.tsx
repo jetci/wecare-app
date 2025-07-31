@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import Link from 'next/link';
 import { useOfficerPatients } from '@/hooks/useOfficerPatients';
 import { useOfficerAppointments } from '@/hooks/useOfficerAppointments';
 import styles from './page.module.css';
@@ -22,7 +23,12 @@ export default function OfficerDashboard() {
 
   return (
     <div className={styles.container}>
-      <h1>Officer Dashboard</h1>
+      <div className="flex justify-between items-center mb-4">
+    <h1 className="text-2xl font-semibold">Officer Dashboard</h1>
+    <Link href="/dashboard/add-patient">
+      <button className="px-4 py-2 bg-blue-600 text-white rounded">เพิ่มผู้ป่วย</button>
+    </Link>
+  </div>
       <div className={styles.stats}>
         <div>Patients: {patients?.length}</div>
         <div>Appointments: {appointments?.length}</div>

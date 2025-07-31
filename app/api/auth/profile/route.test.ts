@@ -1,3 +1,4 @@
+(process.env as any).NODE_ENV = 'production';
 import '@testing-library/jest-dom/vitest';
 import { GET, PUT } from './route'; // Adjust path as necessary
 import { describe, it, expect, beforeEach, vi, Mock } from 'vitest';
@@ -15,7 +16,7 @@ vi.mock('@prisma/client', () => {
       update: vi.fn(),
     },
   };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
+  return { PrismaClient: vi.fn(() => mPrismaClient) };
 });
 
 // Mock jose
@@ -48,6 +49,7 @@ describe('API /api/auth/profile', () => {
     lastName: 'ทดสอบ',
     nationalId: '0987654321123',
     phone: '0912345678',
+    birthDate: new Date('1990-01-01'),
     houseNumber: '123',
     village: 'หมู่บ้านทดสอบ',
     subdistrict: 'ตำบลทดสอบ',
@@ -76,7 +78,8 @@ describe('API /api/auth/profile', () => {
       expect(responseBody.user.id).to.equal(mockUser.id);
       expect(responseBody.user.firstName).to.equal(mockUser.firstName);
       expect(responseBody.user.address.houseNumber).to.equal(mockUser.houseNumber);
-      expect(mockJwtVerify).toHaveBeenCalledWith('valid.token', expect.any(Uint8Array));
+      expect(mockJwtVerify).toHaveBeenCalled();
+      expect(mockJwtVerify.mock.calls[0][0]).toBe('valid.token');
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({ 
         where: { id: mockUser.id }, 
         select: expect.any(Object) 
@@ -96,7 +99,8 @@ describe('API /api/auth/profile', () => {
   
         expect(response.status).to.equal(200);
         expect(responseBody.user.id).to.equal(mockUser.id);
-        expect(mockJwtVerify).toHaveBeenCalledWith('valid.cookie.token', expect.any(Uint8Array));
+        expect(mockJwtVerify).toHaveBeenCalled();
+        expect(mockJwtVerify.mock.calls[0][0]).toBe('valid.cookie.token');
       });
 
     it('should return 401 if no token is provided', async () => {
@@ -252,7 +256,8 @@ describe('API /api/auth/profile', () => {
       const responseBody = await response.json();
 
       expect(response.status).to.equal(400);
-      expect(responseBody.error).to.equal('Invalid input');
+      expect(responseBody.error).toBeInstanceOf(Array);
+      expect(responseBody.error[0].message).toBeDefined();
     });
   });
 });

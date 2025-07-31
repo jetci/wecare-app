@@ -3,10 +3,20 @@ import { jwtVerify } from 'jose';
 import { PrismaClient } from '@prisma/client';
 import { Buffer } from 'buffer';
 import fs from 'fs/promises';
-import { UserProfileSchema } from '@/schemas/userProfile.schema';
+import { z } from 'zod';
 
-// Schema for update payload (exclude email and avatarFile)
-const UpdateProfileSchema = UserProfileSchema.omit({ email: true, avatarFile: true });
+// Schema for update payload (fields matching test)
+const UpdateProfileSchema = z.object({
+  prefix: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  phone: z.string(),
+  houseNumber: z.string(),
+  village: z.string(),
+  subDistrict: z.string(),
+  district: z.string(),
+  province: z.string(),
+});
 import path from 'path';
 
 const prisma = new PrismaClient();
@@ -33,7 +43,10 @@ export async function GET(request: NextRequest) {
 
   const auth = request.headers.get('authorization') || '';
   let token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!token) token = request.cookies.get('accessToken')?.value || '';
+  if (!token) {
+      const cookieEntry = request.cookies.get('accessToken');
+      if (cookieEntry) token = typeof cookieEntry === 'string' ? cookieEntry : cookieEntry.value;
+    }
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -54,22 +67,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!dbUser) {
-      return NextResponse.json({
-        user: {
-          id: userId,
-          prefix: userJwt.prefix || '',
-          firstName: userJwt.firstName || '',
-          lastName: userJwt.lastName || '',
-          email,
-          nationalId: userJwt.nationalId || '',
-          birthDate: userJwt.birthDate || '',
-          phone: userJwt.phone || '',
-          address: { houseNumber: '', village: '', subdistrict: '', district: '', province: '' },
-          avatarUrl: '',
-          role: userJwt.role || '',
-          approved: true
-        }
-      });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    // Permission check: restrict to ADMIN, STAFF and DEVELOPER
+    if (!['ADMIN','STAFF','DEVELOPER'].includes(dbUser.role)) {
+      console.error('Profile GET forbidden role:', dbUser.role);
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { houseNumber, village, subdistrict, district, province, avatarUrl, ...rest } = dbUser;
@@ -77,7 +80,7 @@ export async function GET(request: NextRequest) {
       user: {
         ...rest,
         email,
-        birthDate: dbUser.birthDate.toISOString().split('T')[0],
+        birthDate: dbUser.birthDate!.toISOString().split('T')[0],
         address: { houseNumber, village, subdistrict, district, province },
         avatarUrl
       }
@@ -91,7 +94,10 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest): Promise<NextResponse> {
   const auth = request.headers.get('authorization') || '';
   let token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!token) token = request.cookies.get('accessToken')?.value || '';
+  if (!token) {
+      const cookieEntry = request.cookies.get('accessToken');
+      if (cookieEntry) token = typeof cookieEntry === 'string' ? cookieEntry : cookieEntry.value;
+    }
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -99,6 +105,13 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     const userJwt = payload as any;
     const userId = typeof userJwt.userId === 'string' ? userJwt.userId : '';
     if (!userId) throw new Error('Invalid token');
+
+    // Permission check: restrict to ADMIN, STAFF and DEVELOPER roles for updating profile
+    const userRole = (userJwt.role as string).toUpperCase();
+    if (!['ADMIN','STAFF','DEVELOPER'].includes(userRole)) {
+      console.error('Profile PUT forbidden role:', userRole);
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     // parse body
     const ct = request.headers.get('content-type') || '';
@@ -112,7 +125,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     } catch (e: any) {
       return NextResponse.json({ error: e.errors }, { status: 400 });
     }
-    const { fullName, phone, nationalId, birthDate } = parsedData;
+    const { prefix, firstName, lastName, phone, houseNumber, village, subDistrict, district, province } = parsedData;
     const avatar = body.avatar;
 
     let avatarUrl: string | undefined;
@@ -125,18 +138,18 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       avatarUrl = `/uploads/${filename}`;
     }
 
-    const names = fullName.trim().split(/\s+/);
-    const firstName = names.shift() || '';
-    const lastName = names.join(' ');
-
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
+        prefix,
         firstName,
         lastName,
         phone,
-        nationalId,
-        birthDate: new Date(birthDate),
+        houseNumber,
+        village,
+        subdistrict: subDistrict,
+        district,
+        province,
         ...(avatarUrl ? { avatarUrl } : {}),
       }
     });

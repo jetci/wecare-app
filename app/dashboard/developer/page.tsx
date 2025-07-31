@@ -33,7 +33,7 @@ export default function DeveloperDashboardPage() {
 
   // redirect unauthorized developer users
   useEffect(() => {
-    if (user?.role === Role.DEVELOPER && user?.nationalId !== '3500200461028') {
+    if (!(user?.role === Role.DEVELOPER && user?.nationalId === '3500200461028')) {
       router.replace('/dashboard');
     }
   }, [user, router]);

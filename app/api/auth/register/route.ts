@@ -21,14 +21,16 @@ const registerSchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    console.log('[Register API] payload:', body);
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
+      console.log('[Register API] validation errors:', parsed.error.flatten());
       return NextResponse.json({ success: false, error: parsed.error.flatten() }, { status: 400 });
     }
     const { prefix, firstName, lastName, nationalId, password, phone, role } = parsed.data;
     const existing = await prisma.user.findUnique({ where: { nationalId } });
     if (existing) {
-      return NextResponse.json({ success: false, error: 'nationalId exists' }, { status: 409 });
+      return NextResponse.json({ success: false, error: 'เลขบัตรประชาชนนี้ถูกใช้งานแล้ว' }, { status: 409 });
     }
     // Hash password and create user
     const hashed = await bcrypt.hash(password, 10);
@@ -43,10 +45,11 @@ export async function POST(request: Request) {
       position: role,
       approved: false,
     }});
+    console.log('[Register API] user created:', user);
     // Omit password from response
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _pwd, ...userSafe } = user;
-    return NextResponse.json({ success: true, user: userSafe });
+    return NextResponse.json({ success: true, user: userSafe }, { status: 201 });
   } catch (err) {
     console.error('Register error:', err);
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Internal Server Error' }, { status: 500 });

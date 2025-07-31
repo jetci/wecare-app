@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast';
+import { apiFetch } from '@/lib/api';
 
 export const registerSchema = z.object({
   nationalId: z.string().length(13, 'กรุณาใส่เลขบัตรประชาชน 13 หลัก'),
@@ -12,8 +14,8 @@ export const registerSchema = z.object({
   prefix: z.string().nonempty('เลือกคำนำหน้า'),
   firstName: z.string().nonempty('กรุณาใส่ชื่อ'),
   lastName: z.string().nonempty('กรุณาใส่นามสกุล'),
-  phone: z.string().min(9, 'กรุณาใส่เบอร์โทรศัพท์'),
-  role: z.enum(['Community'], { errorMap: () => ({ message: 'เลือกกลุ่มผู้ใช้เป็น ประชาชนทั่วไป เท่านั้น' }) }),
+  phone: z.string().min(10, 'กรุณาใส่เบอร์โทรศัพท์อย่างน้อย 10 หลัก').regex(/^\d+$/, 'เบอร์โทรศัพท์ต้องเป็นตัวเลขเท่านั้น'),
+  role: z.enum(['COMMUNITY'], { errorMap: () => ({ message: 'เลือกกลุ่มผู้ใช้เป็น ประชาชนทั่วไป เท่านั้น' }) }),
 }).refine((data) => data.password === data.confirmPassword, {
   path: ['confirmPassword'],
   message: 'รหัสผ่านไม่ตรงกัน',
@@ -22,26 +24,32 @@ export const registerSchema = z.object({
 type RegisterData = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
+
   const router = useRouter();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { role: 'Community' },
+    defaultValues: { role: 'COMMUNITY' },
   });
 
   const onSubmit = async (data: RegisterData) => {
+    console.log('[RegisterForm] onSubmit data:', data);
     try {
-      const res = await fetch('/api/auth/register', {
+      const response = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (res.ok) router.push('/login');
-      else {
-        const json = await res.json();
-        alert(json.error || 'เกิดข้อผิดพลาด');
+
+      const result = await response.json();
+      if (response.ok) {
+        toast.success('สมัครสมาชิกสำเร็จ');
+        router.push('/login');
+      } else {
+        toast.error(result.error || 'เกิดข้อผิดพลาด');
       }
-    } catch {
-      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์');
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์');
     }
   };
 
@@ -89,7 +97,7 @@ export default function RegisterForm() {
         <input type="text" {...register('phone')} className="w-full border p-2 rounded" />
         {errors.phone && <p className="text-red-500">{errors.phone.message}</p>}
       </div>
-            <input type="hidden" value="Community" {...register('role')} />
+            <input type="hidden" value="COMMUNITY" {...register('role')} />
       <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white p-2 rounded">
         {isSubmitting ? 'กำลังส่ง...' : 'ลงทะเบียน'}
       </button>

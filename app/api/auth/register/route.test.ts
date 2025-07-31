@@ -75,7 +75,7 @@ describe('POST /api/auth/register', () => {
     const response = await POST(req);
     const responseBody = await response.json();
 
-    expect(response.status).to.equal(200);
+    expect(response.status).to.equal(201);
     expect(responseBody.success).to.equal(true);
     expect(responseBody.user).toEqual(userSafe); // Ensure password is not returned
     expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({ where: { nationalId: validUserData.nationalId } });
@@ -103,7 +103,7 @@ describe('POST /api/auth/register', () => {
 
     expect(response.status).to.equal(409);
     expect(responseBody.success).to.equal(false);
-    expect(responseBody.error).to.equal('nationalId exists');
+    expect(responseBody.error).to.equal('เลขบัตรประชาชนนี้ถูกใช้งานแล้ว');
     expect(mockPrisma.user.create).not.toHaveBeenCalled();
   });
 
