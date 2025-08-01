@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import useSWR from "swr";
 import { fetcher } from '@/lib/fetcher';
 import { Card } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
 import HealthChart from '@/components/dashboard/HealthChart';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+
 import { Role } from '@/types/roles';
 import RoleGuard from '@/components/RoleGuard';
 
@@ -28,20 +27,7 @@ type JobItem = { name: string; status: string };
 type JobsStats = { successCount: number; failedCount: number; items: JobItem[] };
 
 export default function DeveloperDashboardPage() {
-  const router = useRouter();
-  const { user } = useAuth();
 
-  // redirect unauthorized developer users
-  useEffect(() => {
-    if (!(user?.role === Role.DEVELOPER && user?.nationalId === '3500200461028')) {
-      router.replace('/dashboard');
-    }
-  }, [user, router]);
-
-  // don't render UI if unauthorized
-  if (user?.role === Role.DEVELOPER && user?.nationalId !== '3500200461028') {
-    return null;
-  }
 
   const { data: health, error: healthError, isLoading: healthLoading } = useSWR<HealthSummary>('/api/health', fetcher);
   const { data: history, error: historyError, isLoading: historyLoading } = useSWR<HealthPoint[]>('/api/health/history', fetcher);

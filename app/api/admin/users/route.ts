@@ -56,12 +56,14 @@ export const GET = withAuth(getUsers);
 
 // Handler สำหรับสร้างผู้ใช้ใหม่ (Admin)
 const createUserSchema = z.object({
-  name: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  nationalId: z.string().length(13),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8),
   role: z.nativeEnum(Role),
   approved: z.boolean().default(false),
-});
+}).passthrough();
 
 const createUser: AuthenticatedApiHandler = async (req, _ctx, session) => {
   if (session.role !== 'ADMIN') {
@@ -73,9 +75,9 @@ const createUser: AuthenticatedApiHandler = async (req, _ctx, session) => {
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: 'Invalid data', details: parsed.error.flatten() }, { status: 400 });
     }
-    const { name, email, password, role, approved } = parsed.data;
+    const { firstName, lastName, nationalId, email, password, role, approved } = parsed.data;
     const hashed = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({ data: { name, email, password: hashed, role, approved } });
+    const user = await prisma.user.create({ data: { firstName, lastName, nationalId, email, password: hashed, role, approved } });
     return NextResponse.json({ success: true, user }, { status: 201 });
   } catch (err) {
     console.error('🔥 POST /api/admin/users Error:', err);

@@ -44,7 +44,11 @@ export default function LoginForm() {
       setRedirecting(true);
       // Redirect intelligently based on original destination
       const callbackUrl = searchParams.get('callbackUrl');
-      router.push(callbackUrl || `/dashboard/${json.user.role.toLowerCase()}`);
+      // Avoid default root redirect: if callbackUrl is exactly '/dashboard', use role-specific instead
+      const dest = callbackUrl && callbackUrl !== '/dashboard'
+        ? callbackUrl
+        : `/dashboard/${json.user.role.toLowerCase()}`;
+      router.push(dest);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
       setErrorMessage(message);

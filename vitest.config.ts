@@ -4,7 +4,11 @@ import path from 'path'
 
 export default defineConfig({
   resolve: {
-    alias: { '@': path.resolve(__dirname, 'src') },
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@/app': path.resolve(__dirname, 'app'),
+    },
+
   },
   test: {
       include: ['src/**/*.{test,spec}.{js,ts,tsx}', 'app/**/*.{test,spec}.{js,ts,tsx}'],
