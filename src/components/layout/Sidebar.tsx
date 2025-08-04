@@ -4,6 +4,7 @@ import React, { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import {
   HomeIcon,
+  InboxIcon,
   UsersIcon,
   TruckIcon,
   HeartIcon,
@@ -11,16 +12,18 @@ import {
   ChartBarIcon,
   UserIcon,
   CodeBracketIcon,
+
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/context/AuthContext';
 import { useHasMounted } from '@/hooks/useHasMounted'; // 1. Import useHasMounted
 
 const navigation = [
-  { name: 'แดชบอร์ดนักพัฒนา', href: '/dashboard/developer', icon: CodeBracketIcon, role: ['DEVELOPER'] },
   { name: 'ภาพรวม (Community)', href: '/dashboard/community', icon: HomeIcon, role: ['COMMUNITY', 'ADMIN'] },
+  { name: 'คำขอทั้งหมด', href: '/dashboard/community/requests', icon: InboxIcon, role: ['COMMUNITY', 'ADMIN'] },
   { name: 'ข้อมูลส่วนตัว', href: '/dashboard/profile', icon: UserIcon, role: ['DEVELOPER', 'ADMIN', 'COMMUNITY', 'DRIVER', 'OFFICER', 'EXECUTIVE'] },
-  { name: 'ศูนย์กู้ชีพและคนขับรถ(driver)', href: '/dashboard/driver', icon: TruckIcon, role: ['DRIVER', 'ADMIN'] },
-  { name: 'กองสาธารณสุข (office)', href: '/dashboard/officer', icon: HeartIcon, role: ['OFFICER', 'ADMIN'] },
+  { name: 'แดชบอร์ดนักพัฒนา', href: '/dashboard/developer', icon: CodeBracketIcon, role: ['DEVELOPER', 'ADMIN'] },
+  { name: 'เคสของฉัน (Driver)', href: '/dashboard/driver/cases', icon: TruckIcon, role: ['DRIVER', 'ADMIN'] },
+  { name: 'ข้อมูลสาธารณสุข (Officer)', href: '/dashboard/officer', icon: HeartIcon, role: ['OFFICER', 'ADMIN'] },
   { name: 'จัดการผู้ใช้ (Admin)', href: '/dashboard/admin', icon: UsersIcon, role: ['ADMIN'] },
   { name: 'รายงานสรุป (Executive)', href: '/dashboard/executive', icon: ChartBarIcon, role: ['ADMIN'] },
 ];

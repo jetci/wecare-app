@@ -1,0 +1,4 @@
+#!/bin/sh
+# Execute the Node.js pre-checkout script
+# Pass the original arguments from Git to the Node script
+node "$(dirname "$0")/pre-checkout.js" "$@"

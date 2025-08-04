@@ -1,0 +1,3 @@
+#!/bin/sh
+# Execute the Node.js pre-commit script
+node "$(dirname "$0")/pre-commit.js"

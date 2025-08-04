@@ -3,7 +3,6 @@
 import React, { Fragment, useState, useEffect, useCallback, FC } from 'react';
 import { isValidThaiID } from '@/schemas/community/patient.schema';
 import { differenceInMonths, getYear, getMonth } from 'date-fns';
-import type { Resolver } from 'react-hook-form';
 import { Dialog, Transition } from '@headlessui/react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { th } from 'date-fns/locale/th';
+import toast from 'react-hot-toast';
 
 import "react-datepicker/dist/react-datepicker.css";
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
@@ -108,8 +108,6 @@ const MapPicker: FC<MapPickerProps> = ({ onLocationChange }) => {
 
 export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { token } = useAuth();
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -118,18 +116,29 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<PatientFormData>({ // TODO: Suppress resolver type mismatch warning; improve ZodResolver<T> typing later
-      resolver: zodResolver(patientFormSchema) as Resolver<PatientFormData>, mode: 'onBlur' });
+  } = useForm<PatientFormData>({
+      resolver: zodResolver(patientFormSchema), 
+      mode: 'onBlur' 
+  });
 
   const watchPrefix = watch('prefix');
   const watchPatientGroup = watch('patientGroup');
   const watchUseIdCardAddress = watch('useIdCardAddress');
   const watchIdCardAddress = watch(['idCardAddress_houseNumber', 'idCardAddress_moo', 'idCardAddress_phone']);
+  const [displayAge, setDisplayAge] = useState('');
   const watchBirthDate = watch('birthDate');
   const watchNationalId = watch('nationalId');
-  const totalMonths = watchBirthDate ? differenceInMonths(new Date(), watchBirthDate) : null;
-  const years = totalMonths != null ? Math.floor(totalMonths / 12) : null;
-  const months = totalMonths != null ? totalMonths % 12 : null;
+
+  useEffect(() => {
+    if (watchBirthDate) {
+      const totalMonths = differenceInMonths(new Date(), watchBirthDate);
+      const years = Math.floor(totalMonths / 12);
+      const months = totalMonths % 12;
+      setDisplayAge(`${years} ปี ${months} เดือน`);
+    } else {
+      setDisplayAge('');
+    }
+  }, [watchBirthDate]);
 
   useEffect(() => {
     if (['นาย', 'เด็กชาย'].includes(watchPrefix)) setValue('gender', 'ชาย');
@@ -143,26 +152,36 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
       setValue('currentAddress_phone', watchIdCardAddress[2]);
     }
   }, [watchUseIdCardAddress, watchIdCardAddress, setValue]);
-  
-  useEffect(() => { if (!isOpen) { reset(); setApiError(null); setIsSuccess(false);} }, [isOpen, reset]);
-  
+
+  useEffect(() => {
+    if (!isOpen) {
+      reset();
+    }
+  }, [isOpen, reset]);
+
   const onSubmit: SubmitHandler<PatientFormData> = async (data) => {
-    setApiError(null);
+    const toastId = toast.loading('กำลังบันทึกข้อมูลผู้ป่วย...');
     try {
       const response = await fetch('/api/patients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(data),
       });
-      if (response.ok) {
-        setIsSuccess(true);
-        setTimeout(() => { onSuccess(); onClose(); }, 1000);
-        return;
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'ไม่สามารถเพิ่มข้อมูลผู้ป่วยได้');
       }
-      const errorResult = await response.json();
-      throw new Error(errorResult.error || 'ไม่สามารถเพิ่มข้อมูลผู้ป่วยได้');
+
+      toast.success('เพิ่มข้อมูลผู้ป่วยสำเร็จ!', { id: toastId });
+      reset();
+      onSuccess();
+      onClose();
+
     } catch (error: any) {
-      setApiError(error.message);
+      console.error('Failed to add patient:', error);
+      toast.error(`เกิดข้อผิดพลาด: ${error.message}`, { id: toastId });
     }
   };
 
@@ -187,7 +206,7 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
                   <div className="sm:col-span-1"><label>เพศ</label><input {...register('gender')} readOnly className={inputClass} /></div>
                   <div className="sm:col-span-2"><label>วัน/เดือน/ปีเกิด</label><Controller control={control} name="birthDate" render={({ field }) => (<DatePicker locale="th" selected={field.value} onChange={(date: Date | null) => field.onChange(date)} maxDate={new Date()} dateFormat="dd/MM/yyyy" className={inputClass} placeholderText="วว/ดด/พศ" renderCustomHeader={(props) => <CustomHeader {...props} />} />)} />{errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate.message}</p>}</div>
                   <div className="sm:col-span-1"><label>กรุ๊ปเลือด</label><select {...register('bloodType')} className={inputClass}><option value="">-</option><option>A</option><option>B</option><option>AB</option><option>O</option></select></div>
-                  <div className="sm:col-span-1"><label>อายุ</label><input value={years != null ? `${years} ปี ${months} เดือน` : ''} readOnly className={inputClass} /></div>
+                                    <div className="sm:col-span-1"><label>อายุ</label><input value={displayAge} readOnly className={inputClass} /></div>
 
                   {/* ID Card Address */}
                   <div className="sm:col-span-6"><h4 className="font-medium text-gray-800">ที่อยู่ตามบัตรประชาชน</h4></div>
@@ -218,9 +237,6 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
                   <div className="sm:col-span-6"><label>หมายเหตุ/จุดสังเกต</label><textarea {...register('notes')} rows={2} className={inputClass} /></div>
                 
                 </div>
-
-                {apiError && <div className="mt-4 rounded-md bg-red-50 p-4"><p className="text-sm text-red-700">{apiError}</p></div>}
-                {isSuccess && <div className="mt-4 rounded-md bg-green-50 p-4"><p className="text-sm text-green-700">เพิ่มข้อมูลผู้ป่วยสำเร็จ!</p></div>}
 
                 <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                   <button type="submit" disabled={isSubmitting || (!!watchNationalId && !isValidThaiID(watchNationalId))} className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed sm:col-start-2">

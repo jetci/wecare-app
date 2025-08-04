@@ -27,9 +27,4 @@ export default defineConfig({
     testTimeout: 10000,
     passWithNoTests: true,              // 10s per test
   },
-  coverage: {
-    provider: 'istanbul',
-    reporter: ['text', 'lcov', 'json'],
-    reportsDirectory: 'coverage'
-  }
 })

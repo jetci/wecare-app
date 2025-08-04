@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -14,9 +15,27 @@ async function main() {
       firstName: 'Test',
       lastName: 'User',
       nationalId: '0000000000001',
-      password: 'password123',
+      password: await bcrypt.hash('password123', 10),
       role: 'COMMUNITY',
       position: 'COMMUNITY',
+      approved: true,
+    },
+  });
+
+  // Seed a developer user for testing purposes
+  const developerUserId = 'clwkbx1230000v7p4gh5i9j0'; // Unique ID for the developer
+  await prisma.user.upsert({
+    where: { id: developerUserId },
+    update: {},
+    create: {
+      id: developerUserId,
+      prefix: 'นาย',
+      firstName: 'Developer',
+      lastName: 'Test',
+      nationalId: '0000000000000',
+      password: await bcrypt.hash('password123', 10),
+      role: 'DEVELOPER',
+      position: 'ADMIN',
       approved: true,
     },
   });

@@ -29,19 +29,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedToken = localStorage.getItem('accessToken');
-      if (storedToken) {
-        login(storedToken);
-      } else if (process.env.NEXT_PUBLIC_DEV_USER_ID) {
-        const devId = process.env.NEXT_PUBLIC_DEV_USER_ID;
-        setUser({ userId: devId, role: 'DEVELOPER', iat: Date.now(), exp: Date.now() + 1000 * 60 * 60 * 24 });
+    const initializeAuth = () => {
+      try {
+        const storedToken = localStorage.getItem('accessToken');
+        if (storedToken) {
+          const decoded = jwtDecode<UserPayload>(storedToken);
+          if (decoded.exp * 1000 > Date.now()) {
+            setToken(storedToken);
+            setUser(decoded);
+          } else {
+            // Token expired
+            logout();
+          }
+        } else if (process.env.NEXT_PUBLIC_DEV_USER_ID) {
+          const devId = process.env.NEXT_PUBLIC_DEV_USER_ID;
+          setUser({ userId: devId, nationalId: devId, role: 'DEVELOPER', iat: Date.now(), exp: Date.now() + 1000 * 60 * 60 * 24 });
+        }
+      } catch (err) {
+        console.error("Failed to initialize auth from storage:", err);
+        logout(); // Clear invalid state
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Init auth error:", err);
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = (newToken: string) => {
@@ -49,26 +61,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const decoded = jwtDecode<UserPayload>(newToken);
       if (decoded.exp * 1000 < Date.now()) {
         logout();
-        return;
+        throw new Error("Token has expired.");
       }
-      const isDev = decoded.userId === process.env.NEXT_PUBLIC_DEV_USER_ID;
-      const effectiveUser = isDev
-        ? { ...decoded, role: 'DEVELOPER' as const }
-        : decoded;
-      setUser(effectiveUser);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('accessToken', newToken);
+      }
       setToken(newToken);
-      localStorage.setItem('accessToken', newToken);
-    } catch (err) {
-      console.error("Login decode error:", err);
-      logout();
+      setUser(decoded);
+    } catch (error) {
+      console.error('Failed to process login:', error);
+      logout(); // Ensure clean state on error
     }
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('accessToken');
-    if (typeof window !== 'undefined') window.location.href = '/login';
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    }
   };
 
   const isAuthenticated = !!user;

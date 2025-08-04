@@ -1,0 +1,5 @@
+app/page.tsx
+app/login/page.tsx
+app/register/page.tsx
+app/layout.tsx
+app/globals.css

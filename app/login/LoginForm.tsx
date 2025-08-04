@@ -29,7 +29,7 @@ export default function LoginForm() {
   const onSubmit = async (data: FormData) => {
     setErrorMessage('');
     try {
-      const res = await apiFetch('/api/auth/login', {
+      const res = await apiFetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

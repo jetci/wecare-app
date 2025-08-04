@@ -1,46 +1,35 @@
-import React, { useState } from 'react'
-import useSWR from 'swr'
-import { NotificationList, Notification } from '../ui/NotificationList'
-import { ConfirmationModal } from '../ui/ConfirmationModal'
-import { DriverLiveMap } from '../maps/DriverLiveMap'
-import { RideRequest, UnknownObject } from '@/types/components'
+'use client';
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
+import React, { useState, useEffect } from 'react';
+import useSWR from 'swr';
+import { useDriverCases, RideCase } from '@/hooks/useDriverCases'; // Import RideCase
+import { NotificationList, Notification } from '../ui/NotificationList';
+import { ConfirmationModal } from '../ui/ConfirmationModal';
+import { DriverLiveMap } from '../maps/DriverLiveMap';
+import { UnknownObject } from '@/types/components'; // Remove RideRequest
 
-const DriverDashboard: React.FC = () => {
-  const [isOnline, setIsOnline] = useState(false)
-  const [actionRide, setActionRide] = useState<{ id: string; action: string } | null>(null)
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-  const { data: profile } = useSWR<{ id: string; role: string }>('/api/auth/profile', fetcher)
-  const userId = profile?.id || ''
+export const DriverDashboard: React.FC = () => {
+  const { cases, isLoading, isError, acceptCase, completeCase } = useDriverCases();
+  const [isOnline, setIsOnline] = useState(false);
+  const [actionRide, setActionRide] = useState<{ id: string; action: string } | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
-  const { data: pending, mutate: mutatePending } = useSWR<RideRequest[]>(
-    isOnline ? `/api/rides?driverId=${userId}&status=PENDING` : null,
-    fetcher
-  )
-  const { data: inProgress, mutate: mutateInProgress } = useSWR<RideRequest[]>(
-    isOnline ? `/api/rides?driverId=${userId}&status=IN_PROGRESS` : null,
-    fetcher
-  )
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
-  const { data: history } = useSWR<RideRequest[]>(
-    `/api/rides?driverId=${userId}&status=COMPLETED`,
-    fetcher
-  )
-  const { data: notifications } = useSWR<Notification[]>('/api/notifications', fetcher)
+  const pending = isOnline ? cases.filter((c: RideCase) => c.status === 'pending') : [];
+  const inProgress = isOnline ? cases.filter((c: RideCase) => c.status === 'in_progress') : [];
+  const history = cases.filter((c: RideCase) => c.status === 'completed');
 
-  const toggleOnline = () => setIsOnline(o => !o)
+  const { data: notifications } = useSWR<Notification[]>('/api/notifications', fetcher);
 
-  const updateStatus = async (id: string, status: string) => {
-    await fetch(`/api/rides/${id}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-    // revalidate lists
-    mutatePending && mutatePending()
-    mutateInProgress && mutateInProgress()
-  }
+  const toggleOnline = () => setIsOnline(o => !o);
+
+  const onAccept = async (id: string) => { await acceptCase(id); };
+  const onComplete = async (id: string) => { await completeCase(id); };
 
   return (
     <div className="p-4 space-y-6">
@@ -54,21 +43,21 @@ const DriverDashboard: React.FC = () => {
       {isOnline && (
         <section>
           <h2 className="text-xl font-semibold">New Requests</h2>
-          {pending?.length === 0 && <p>ไม่มีคำขอใหม่</p>}
-          {pending?.map((r: RideRequest) => (
+          {isLoading && <p>Loading requests...</p>}
+          {!isLoading && pending.length === 0 && <p>ไม่มีคำขอใหม่</p>}
+          {pending?.map((r: RideCase) => (
             <div key={r.id} className="border p-2 my-2 flex justify-between items-center">
               <div>
                 <p>Patient: {r.patient.firstName} {r.patient.lastName}</p>
-                <p>Date: {new Date(r.date).toLocaleString()}</p>
+                <p>Date: {isClient ? new Date(r.createdAt).toLocaleString() : new Date(r.createdAt).toLocaleDateString()}</p>
               </div>
               <div className="space-x-2">
                 <button
                   className="px-2 py-1 bg-blue-500 text-white rounded"
-                  onClick={() => updateStatus(r.id, 'ACCEPTED')}
+                  onClick={() => onAccept(r.id)}
                 >รับ</button>
                 <button
                   className="px-2 py-1 bg-gray-400 text-white rounded"
-                  onClick={() => updateStatus(r.id, 'CANCELLED')}
                 >ปฏิเสธ</button>
               </div>
             </div>
@@ -79,17 +68,16 @@ const DriverDashboard: React.FC = () => {
       {inProgress && inProgress.length > 0 && (
         <section>
           <h2 className="text-xl font-semibold">Current Ride</h2>
-          {inProgress.map((r: RideRequest) => (
+          {inProgress.map((r: RideCase) => (
             <div key={r.id} className="space-y-4">
               <DriverLiveMap rideId={r.id} />
               <div className="flex space-x-2">
                 <button
                   className="px-4 py-2 bg-yellow-500 text-white rounded"
-                  onClick={() => updateStatus(r.id, 'PENDING')}
                 >มาถึงแล้ว</button>
                 <button
                   className="px-4 py-2 bg-green-600 text-white rounded"
-                  onClick={() => updateStatus(r.id, 'COMPLETED')}
+                  onClick={() => onComplete(r.id)}
                 >เสร็จสิ้น</button>
               </div>
             </div>
@@ -101,9 +89,9 @@ const DriverDashboard: React.FC = () => {
         <h2 className="text-xl font-semibold">History</h2>
         {history?.length === 0 && <p>ยังไม่มีประวัติ</p>}
         <ul>
-          {history?.map((r: RideRequest) => (
+          {history?.map((r: RideCase) => (
             <li key={r.id} className="border-b py-2">
-              {new Date(r.date).toLocaleString()} - {r.patient.firstName} {r.patient.lastName}
+              {isClient ? new Date(r.createdAt).toLocaleString() : new Date(r.createdAt).toLocaleDateString()} - {r.patient.firstName} {r.patient.lastName}
             </li>
           ))}
         </ul>

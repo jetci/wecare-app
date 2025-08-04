@@ -22,13 +22,7 @@ const getJwtSecretKey = () => {
  * @returns A promise that resolves to the AuthSession payload or NextResponse if invalid.
  */
 export async function verifyAuth(req: NextRequest): Promise<AuthSession | NextResponse> {
-  // Extract token from Authorization header
-let token = req.headers.get('authorization')?.split(' ')[1] || '';
-// Fallback: get token from cookie
-if (!token) {
-  const cookieEntry = req.cookies.get('accessToken');
-  if (cookieEntry) token = typeof cookieEntry === 'string' ? cookieEntry : cookieEntry.value;
-}
+  const token = req.headers.get('authorization')?.split(' ')[1];
 
   if (!token) {
     return NextResponse.json({ success: false, code: 'MISSING_TOKEN', message: 'Missing token' }, { status: 401 });

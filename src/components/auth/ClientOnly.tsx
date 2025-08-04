@@ -3,7 +3,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 
 const InitialLoadingScreen = () => (
-  <div suppressHydrationWarning className="flex h-screen items-center justify-center bg-white">
+  <div className="flex h-screen items-center justify-center bg-white">
     <p>Loading Application...</p>
   </div>
 );
@@ -16,7 +16,7 @@ export const ClientOnly = ({ children }: { children: ReactNode }) => {
   }, []);
 
   if (!hasMounted) {
-    return null;
+    return <InitialLoadingScreen />;
   }
 
   return <>{children}</>;
