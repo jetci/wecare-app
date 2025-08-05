@@ -54,18 +54,35 @@ export default function LoginForm() {
       const json = await res.json();
       console.log('4. [AFTER JSON PARSE] Parsed JSON:', json);
 
-      if (!json.success) {
-        throw new Error(json.message || 'An error occurred during login.');
-      }
-      
-      const token = json.token;
-      console.log('5. [BEFORE CONTEXT CALL] Extracted token:', token, '| Type:', typeof token);
-      
-      if (typeof token !== "string" || !token) {
-        throw new Error("Token is missing or not a valid string");
+      if (!json.success || !json.accessToken || !json.user) {
+        throw new Error(json.message || 'Login response is missing required fields.');
       }
 
-      login(token);
+      const { accessToken, user } = json;
+      console.log('5. [DATA EXTRACTED] Token and user object received:', { accessToken, user });
+
+      // 1. Update authentication context
+      console.log('6. [VERIFY BEFORE CALL] Verifying user object before calling login:', user);
+      login(accessToken, user);
+
+      // 2. Determine the redirect path based on user role
+      const role = user.role;
+      const roleToPath: Record<string, string> = {
+        COMMUNITY: '/dashboard/community',
+        DRIVER: '/dashboard/driver',
+        OFFICER: '/dashboard/health-officer', // Note: Role in DB is OFFICER
+        EXECUTIVE: '/dashboard/executive',
+        ADMIN: '/dashboard/admin',
+        DEVELOPER: '/dashboard/developer',
+      };
+
+      // Ensure role matching is case-insensitive by converting to uppercase
+      const redirectPath = roleToPath[role.toUpperCase()] || '/dashboard/community'; // Fallback
+      console.log(`6. [REDIRECTING] User role: ${role}, Path: ${redirectPath}`);
+
+      // 3. Redirect the user
+      router.push(redirectPath);
+
       console.log('--- LoginForm Debug Finished ---');
     } catch (err: unknown) {
       // We keep console.error here for development debugging, 

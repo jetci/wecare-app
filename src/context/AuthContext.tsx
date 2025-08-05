@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 // This interface now represents the user object returned from our API
 interface User {
@@ -14,7 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (token: string) => void; // Login now accepts a token string
+  login: (token: string, user: User) => void; // Login now accepts token and user object
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   role: User['role'] | null;
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
   // Set loading to false initially, as we are not fetching data on load anymore.
   const [loading, setLoading] = useState(true); // Set loading to true initially
 
@@ -50,46 +52,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // The login function now directly receives the user object from the form.
-  const login = (token: string) => {
-    console.log('📦 Token used for login:', token);
-    if (typeof token !== 'string') {
-      console.error('AuthContext: login function called with invalid token type.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Decode the token to get user payload
-      // NOTE: This is for client-side display. Verification is done on the server.
-      const decodedUser = JSON.parse(atob(token.split('.')[1])) as User;
-      console.log('👤 Decoded user:', decodedUser);
-
-      if (decodedUser) {
-        setUser(decodedUser);
-      } else {
-        throw new Error('Decoded user is null or undefined.');
-      }
-    } catch (error) {
-      console.error('AuthContext: Failed to decode token or set user.', error);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const login = useCallback((token: string, userData: User) => {
+    console.log('📦 AuthContext: Logging in with user data:', userData);
+    // The API handler now sets an HttpOnly cookie with the token.
+    // Client-side, we just need to set the user state to update the UI.
+    setUser(userData);
+    setLoading(false);
+  }, []);
 
   const logout = async () => {
     console.log('AuthContext: Logging out...');
     setLoading(true);
     try {
       // The API call clears the HttpOnly cookie on the server.
-      await fetch('/api/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { method: 'POST' });
     } catch (error) {
       console.error('AuthContext: Error during logout API call', error);
     } finally {
-      // Always clear user state on the client.
+      // Always clear user state on the client and redirect.
       setUser(null);
       setLoading(false);
-      console.log('AuthContext: Client state cleared.');
+      router.push('/login');
+      console.log('AuthContext: Client state cleared and redirected to login.');
     }
   };
 

@@ -37,13 +37,14 @@ export default function LoginForm() {
       });
       const json = await res.json();
       console.log("⚠️ Full response JSON:", json);
-      console.log("✅ token from response:", json.accessToken);
-      if (!res.ok) throw new Error(json.error || json.message || 'Login failed');
+      const { accessToken, user } = json; // Destructure user from data
+      console.log("✅ token from response:", accessToken);
 
-      // Call login and set cookies
-      login(json.accessToken);
-      console.log("🚀 Calling login with:", json.accessToken);
-      document.cookie = `accessToken=${json.accessToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
+      // The user object is now also needed for the login function.
+      // We'll pass it along with the token.
+      login(accessToken, user); // Pass the destructured user object
+      console.log('🚀 Calling login with:', accessToken, 'and user:', user);
+      document.cookie = `accessToken=${accessToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       if (json.refreshToken) {
         document.cookie = `refreshToken=${json.refreshToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       }
