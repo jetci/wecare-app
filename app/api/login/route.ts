@@ -44,7 +44,17 @@ export async function POST(req: Request) {
       .setIssuedAt()
       .sign(secret);
 
-    const response = NextResponse.json({ success: 'เข้าสู่ระบบสำเร็จ' }, { status: 200 });
+    const response = NextResponse.json({
+        success: 'เข้าสู่ระบบสำเร็จ',
+        accessToken: token,
+        user: {
+            id: user.id,
+            role: user.role,
+            nationalId: user.nationalId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+        }
+    }, { status: 200 });
     
     response.cookies.set('token', token, {
         httpOnly: true,

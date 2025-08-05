@@ -1,3 +1,4 @@
+// Force rebuild
 "use client";
 'use client';
 import React, { useState, useEffect } from 'react';
@@ -21,49 +22,62 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // This useEffect can be removed if old tokens are no longer a concern,
+  // but is kept for now to ensure a clean slate during transition.
   useEffect(() => {
     localStorage.removeItem('accessToken');
-    document.cookie = 'refreshToken=; path=/; max-age=0';
   }, []);
 
   const onSubmit = async (data: FormData) => {
     setErrorMessage('');
     try {
-      const res = await apiFetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      console.log('✅ [FORCE REBUILD] Submitting login form with:', data);
+      console.log('--- LoginForm Debug Started ---');
+      console.log('1. [BEFORE FETCH] Submitting with data:', data);
+
+      const res = await fetch("/api/login", {
+        method: "POST",
         body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
       });
+
+      console.log('2. [AFTER FETCH] Response received. Status:', res.status, 'OK:', res.ok);
+
+      if (!res.ok) {
+        console.error('   [ERROR] Response not OK. Logging response text...');
+        const errorText = await res.text();
+        console.error('   [ERROR] Response body:', errorText);
+        throw new Error(`Login failed with status: ${res.status}`);
+      }
+
+      console.log('3. [BEFORE JSON PARSE] Attempting to parse response as JSON...');
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || json.message || 'Login failed');
-      login(json.accessToken);
-      document.cookie = `accessToken=${json.accessToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
-      if (json.refreshToken) {
-        document.cookie = `refreshToken=${json.refreshToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
+      console.log('4. [AFTER JSON PARSE] Parsed JSON:', json);
+
+      if (!json.success) {
+        throw new Error(json.message || 'An error occurred during login.');
       }
-      setRedirecting(true);
-      // Redirect intelligently based on original destination
-      const callbackUrl = searchParams.get('callbackUrl');
-      // Avoid default root redirect: if callbackUrl is exactly '/dashboard', use role-specific instead
-      let dest = `/dashboard/${json.user.role.toLowerCase()}`;
-      if (callbackUrl && callbackUrl.startsWith('/dashboard/')) {
-        const seg = callbackUrl.split('/');
-        if (seg.length >= 3) dest = `/${seg[1]}/${seg[2]}`;
+      
+      const token = json.token;
+      console.log('5. [BEFORE CONTEXT CALL] Extracted token:', token, '| Type:', typeof token);
+      
+      if (typeof token !== "string" || !token) {
+        throw new Error("Token is missing or not a valid string");
       }
-      router.push(dest);
+
+      login(token);
+      console.log('--- LoginForm Debug Finished ---');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
+      // We keep console.error here for development debugging, 
+      // but it can be removed in a production build process.
+      console.error("Login Submit Error:", err);
+      const message = err instanceof Error ? err.message : 'An unknown error occurred.';
+      toast.error(message);
       setErrorMessage(message);
     }
   };
 
-  if (redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-lg">
-        กำลังไปยังหน้า Dashboard ตามบทบาท...
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

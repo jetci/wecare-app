@@ -27,6 +27,7 @@ export default function LoginForm() {
   }, []);
 
   const onSubmit = async (data: FormData) => {
+    console.log("🔁 onSubmit called");
     setErrorMessage('');
     try {
       const res = await apiFetch('/api/login', {
@@ -35,8 +36,13 @@ export default function LoginForm() {
         body: JSON.stringify(data),
       });
       const json = await res.json();
+      console.log("⚠️ Full response JSON:", json);
+      console.log("✅ token from response:", json.accessToken);
       if (!res.ok) throw new Error(json.error || json.message || 'Login failed');
+
+      // Call login and set cookies
       login(json.accessToken);
+      console.log("🚀 Calling login with:", json.accessToken);
       document.cookie = `accessToken=${json.accessToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       if (json.refreshToken) {
         document.cookie = `refreshToken=${json.refreshToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
@@ -63,6 +69,7 @@ export default function LoginForm() {
     );
   }
 
+  console.log('✅ [DEBUG] LoginForm is rendering. handleSubmit is attached:', handleSubmit);
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-sm bg-white p-8 rounded shadow">

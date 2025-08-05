@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import { ClientOnly } from '@/components/auth/ClientOnly';
 
 // This should be declared only ONCE.
@@ -19,11 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning className={inter.className}>
+      <body className={inter.className}>
         <AuthProvider>
-          <ClientOnly>
-            {children}
-          </ClientOnly>
+          <AuthGuard>
+            <ClientOnly>
+              {children}
+            </ClientOnly>
+          </AuthGuard>
         </AuthProvider>
       </body>
     </html>
