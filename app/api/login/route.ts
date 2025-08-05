@@ -1,72 +1,26 @@
 import { NextResponse } from 'next/server';
-import { LoginSchema } from '@/schemas/login.schema';
-import prisma from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
-import * as jose from 'jose';
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const validatedFields = LoginSchema.safeParse(body);
+export async function POST(request: Request) {
+  const { nationalId, password } = await request.json();
+  console.log('[API /api/login] Received:', { nationalId, password });
+  
 
-    if (!validatedFields.success) {
-      return NextResponse.json({ error: 'ข้อมูลไม่ถูกต้อง' }, { status: 400 });
-    }
-
-    const { nationalId, password } = validatedFields.data;
-
-    const user = await prisma.user.findUnique({
-      where: {
-        nationalId,
-      },
+  // Mock ตรวจสอบรหัสประชาชนและรหัสผ่าน
+  if (nationalId === '3500200461028' && password === '@Admin123') {
+    const response = NextResponse.json(
+      { accessToken: 'mock-token', refreshToken: 'mock-token', user: { nationalId, role: 'COMMUNITY' } },
+      { status: 200 }
+    );
+    response.cookies.set('refreshToken', 'mock-token', {
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
     });
-
-    if (!user || !user.password) {
-      return NextResponse.json({ error: 'รหัสประชาชนหรือรหัสผ่านไม่ถูกต้อง' }, { status: 401 });
-    }
-
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordCorrect) {
-      return NextResponse.json({ error: 'รหัสประชาชนหรือรหัสผ่านไม่ถูกต้อง' }, { status: 401 });
-    }
-
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const alg = 'HS256';
-
-    const token = await new jose.SignJWT({
-        userId: user.id,
-        nationalId: user.nationalId,
-        role: user.role,
-      })
-      .setProtectedHeader({ alg })
-      .setExpirationTime('1d')
-      .setIssuedAt()
-      .sign(secret);
-
-    const response = NextResponse.json({
-        success: 'เข้าสู่ระบบสำเร็จ',
-        accessToken: token,
-        user: {
-            id: user.id,
-            role: user.role,
-            nationalId: user.nationalId,
-            firstName: user.firstName,
-            lastName: user.lastName,
-        }
-    }, { status: 200 });
-    
-    response.cookies.set('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/',
-    });
-
     return response;
-
-  } catch (error) {
-    console.error('[LOGIN_API_ERROR]', error);
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์' }, { status: 500 });
   }
+
+  return NextResponse.json(
+      { error: 'รหัสประชาชนหรือรหัสผ่านไม่ถูกต้อง' },
+      { status: 401 }
+    );
 }

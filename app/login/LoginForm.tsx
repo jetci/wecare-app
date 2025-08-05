@@ -1,9 +1,7 @@
 "use client";
-'use client';
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { useForm } from "react-hook-form";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { apiFetch } from '@/lib/api';
@@ -14,12 +12,9 @@ interface FormData {
 }
 
 export default function LoginForm() {
-  const { login } = useAuth();
-  const [redirecting, setRedirecting] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>();
   const [errorMessage, setErrorMessage] = useState<string>('');
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     localStorage.removeItem('accessToken');
@@ -27,7 +22,6 @@ export default function LoginForm() {
   }, []);
 
   const onSubmit = async (data: FormData) => {
-    console.log("🔁 onSubmit called");
     setErrorMessage('');
     try {
       const res = await apiFetch('/api/login', {
@@ -36,41 +30,19 @@ export default function LoginForm() {
         body: JSON.stringify(data),
       });
       const json = await res.json();
-      console.log("⚠️ Full response JSON:", json);
-      const { accessToken, user } = json; // Destructure user from data
-      console.log("✅ token from response:", accessToken);
-
-      // The user object is now also needed for the login function.
-      // We'll pass it along with the token.
-      login(accessToken, user); // Pass the destructured user object
-      console.log('🚀 Calling login with:', accessToken, 'and user:', user);
-      document.cookie = `accessToken=${accessToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
+      if (!res.ok) throw new Error(json.error || json.message || 'Login failed');
+      localStorage.setItem('accessToken', json.accessToken);
+      document.cookie = `accessToken=${json.accessToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       if (json.refreshToken) {
         document.cookie = `refreshToken=${json.refreshToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       }
-      setRedirecting(true);
-      // Redirect intelligently based on original destination
-      const callbackUrl = searchParams.get('callbackUrl');
-      // Avoid default root redirect: if callbackUrl is exactly '/dashboard', use role-specific instead
-      const dest = callbackUrl && callbackUrl !== '/dashboard'
-        ? callbackUrl
-        : `/dashboard/${json.user.role.toLowerCase()}`;
-      router.push(dest);
+      router.push(`/dashboard/${json.user.role.toLowerCase()}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
       setErrorMessage(message);
     }
   };
 
-  if (redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-lg">
-        กำลังไปยังหน้า Dashboard ตามบทบาท...
-      </div>
-    );
-  }
-
-  console.log('✅ [DEBUG] LoginForm is rendering. handleSubmit is attached:', handleSubmit);
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-sm bg-white p-8 rounded shadow">

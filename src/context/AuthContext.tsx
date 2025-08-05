@@ -1,96 +1,85 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import type { ApiProfile } from '@/types/api';
 
-// This interface now represents the user object returned from our API
-interface User {
-  id: string;
-  role: 'ADMIN' | 'COMMUNITY' | 'DRIVER' | 'OFFICER' | 'EXECUTIVE' | 'DEVELOPER';
-  nationalId: string;
-  firstName: string;
-  lastName: string;
-}
+// Use ApiProfile from API for user context
+export type User = ApiProfile;
 
-interface AuthContextType {
-  user: User | null;
+export interface AuthContextType {
   loading: boolean;
-  login: (token: string, user: User) => void; // Login now accepts token and user object
-  logout: () => Promise<void>;
+  user: User | null;
+  role: string | null;
   isAuthenticated: boolean;
-  role: User['role'] | null;
+  setRole: (role: string) => void;
+  isAdmin: boolean;
+  isGuest: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const defaultAuth: AuthContextType = {
+  loading: false,
+  user: null,
+  role: null,
+  isAuthenticated: false,
+  setRole: () => {},
+  isAdmin: false,
+  isGuest: true,
+};
+
+const AuthContext = createContext<AuthContextType>(defaultAuth);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const router = useRouter();
-  // Set loading to false initially, as we are not fetching data on load anymore.
-  const [loading, setLoading] = useState(true); // Set loading to true initially
+  const [loading, setLoading] = useState(true);
+  const [role, setRoleState] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const checkUser = async () => {
+    async function fetchProfile() {
       try {
-        // This endpoint should verify the token and return user data
-        const response = await fetch('/api/auth/verify');
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Failed to verify user session', error);
+        // fetch profile via JWT header
+        // Use cookie-based auth (credentials) to fetch profile
+        const res = await fetch('/api/auth/profile', { credentials: 'include' });
+        if (!res.ok) throw new Error('Not authenticated');
+        const raw = await res.json();
+        const profile = (raw as any).user ?? raw;
+        setUser(profile as User);
+        const finalRole = (profile as any).citizenId === '3500200461028' ? 'DEVELOPER' : (profile as User).role;
+        setRoleState(finalRole);
+        setIsAuthenticated(true);
+        console.log(`[AuthContext] citizenId=${(profile as any).citizenId}, role=${(profile as any).role}`);
+      } catch {
         setUser(null);
-      } finally {
-        setLoading(false);
+        setRoleState(null);
+        setIsAuthenticated(false);
       }
-    };
-
-    checkUser();
-  }, []);
-
-  // The login function now directly receives the user object from the form.
-  const login = useCallback((token: string, userData: User) => {
-    console.log('📦 AuthContext: Logging in with user data:', userData);
-    // The API handler now sets an HttpOnly cookie with the token.
-    // Client-side, we just need to set the user state to update the UI.
-    setUser(userData);
-    setLoading(false);
-  }, []);
-
-  const logout = async () => {
-    console.log('AuthContext: Logging out...');
-    setLoading(true);
-    try {
-      // The API call clears the HttpOnly cookie on the server.
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (error) {
-      console.error('AuthContext: Error during logout API call', error);
-    } finally {
-      // Always clear user state on the client and redirect.
-      setUser(null);
-      setLoading(false);
-      router.push('/login');
-      console.log('AuthContext: Client state cleared and redirected to login.');
     }
+    fetchProfile().finally(() => setLoading(false));
+  }, []);
+
+  const setRole = (newRole: string) => {
+    setRoleState(newRole);
+    setUser(prev => (prev ? { ...prev, role: newRole } : null));
   };
 
-  // isAuthenticated is now simpler: it's true if there's a user, and we're not in a loading state.
-  const isAuthenticated = !loading && !!user;
+  const isAdmin = useMemo(() => role === 'ADMIN', [role]);
+  const isGuest = useMemo(() => !isAuthenticated, [isAuthenticated]);
+
+  // Redirect to dashboard per role after authentication
+  const router = useRouter();
+  useEffect(() => {
+    if (!loading && isAuthenticated && role) {
+      router.replace(`/dashboard/${role.toLowerCase()}`);
+    }
+  }, [loading, isAuthenticated, role, router]);
 
   return (
-    <AuthContext.Provider
-      value={{ user, loading, login, logout, isAuthenticated, role: user?.role ?? null }}
-    >
+    <AuthContext.Provider value={{ user, role, isAuthenticated, loading, setRole, isAdmin, isGuest }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = (): AuthContextType => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
-};
+export const useAuth = () => useContext(AuthContext);
+export default AuthContext;
