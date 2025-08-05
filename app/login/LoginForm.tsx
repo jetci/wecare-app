@@ -36,7 +36,9 @@ export default function LoginForm() {
       if (json.refreshToken) {
         document.cookie = `refreshToken=${json.refreshToken}; path=/; SameSite=Lax; max-age=${7*24*60*60}`;
       }
-      router.push(`/dashboard/${json.user.role.toLowerCase()}`);
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectPath = searchParams.get("callbackUrl") || '/dashboard';
+      router.push(redirectPath);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
       setErrorMessage(message);
