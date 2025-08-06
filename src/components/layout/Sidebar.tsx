@@ -15,7 +15,7 @@ import {
 
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/context/AuthContext';
-import { useHasMounted } from '@/hooks/useHasMounted'; // 1. Import useHasMounted
+import { usePathname } from 'next/navigation';
 
 const navigation = [
   // General Access
@@ -40,11 +40,21 @@ function classNames(...classes: string[]) {
 }
 
 const SidebarContent = () => {
-  const hasMounted = useHasMounted(); // 2. เรียกใช้ hook
-  const { role: userRole, logout, loading } = useAuth();
+  const { role: userRole, logout, loading, isAuthenticated, initialChecked } = useAuth();
+  const pathname = usePathname();
 
-  // 3. เราจะอ่าน pathname ก็ต่อเมื่อ component ถูก mount
-  const pathname = hasMounted ? window.location.pathname : '';
+  // DEV.10: Add console logs for debugging
+  // SA-X: Log loading state on every render for debugging
+  // SA-X: Log all relevant auth states for debugging
+  console.log('[Sidebar] Auth State:', { loading, initialChecked, isAuthenticated, userRole });
+
+  const filteredNavigation = userRole 
+    ? navigation.filter(item => item.role.includes(userRole))
+    : [];
+
+  if (userRole) {
+    console.log('[Sidebar] Filtered Menu Items:', filteredNavigation);
+  }
 
   return (
     <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-4">
@@ -55,30 +65,39 @@ const SidebarContent = () => {
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
             <ul role="list" className="-mx-2 space-y-1">
-              {loading ? (
-                [...Array(5)].map((_, index) => (
-                  <li key={index} className="h-10 bg-gray-800 rounded-md animate-pulse w-full"></li>
-                ))
-              ) : (
-                navigation
-                  .filter(item => userRole && item.role.includes(userRole))
-                  .map((item) => (
-                    <li key={item.name}>
-                      <a
-                        href={item.href}
-                        className={classNames(
-                          pathname.startsWith(item.href)
-                            ? 'bg-gray-800 text-white'
-                            : 'text-gray-400 hover:text-white hover:bg-gray-800',
-                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                        )}
-                      >
-                        <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                        {item.name}
-                      </a>
-                    </li>
-                  ))
-              )}
+              {/* SA-X: Show skeleton ONLY while loading to prevent premature rendering */}
+              {loading &&
+                [...Array(6)].map((_, index) => (
+                  <li key={`skel-${index}`} className="h-10 bg-gray-800 rounded-md animate-pulse w-full"></li>
+                ))}
+
+              {/* Show menu only when loading is done and user is authenticated */}
+              {!loading && isAuthenticated && userRole &&
+                filteredNavigation.map((item) => (
+                  <li key={item.name}>
+                    <a
+                      href={item.href}
+                      className={classNames(
+                        pathname.startsWith(item.href)
+                          ? 'bg-gray-800 text-white'
+                          : 'text-gray-400 hover:text-white hover:bg-gray-800',
+                        'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                      )}
+                    >
+                      <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+                      {item.name}
+                    </a>
+                  </li>
+                ))}
+
+              {/* SA-X: Show error only AFTER initial check is complete and user is NOT authenticated */}
+              {initialChecked && !isAuthenticated && (() => {
+                // DEV.11: Add console.error for deep debugging
+                console.error('[Sidebar] Fallback Error Triggered. Auth State:', { loading, isAuthenticated, userRole });
+                return (
+                  <li className="p-2 text-sm text-gray-500">ระบบมีปัญหา กรุณาติดต่อผู้ดูแล</li>
+                );
+              })()}
             </ul>
           </li>
           <li className="mt-auto">

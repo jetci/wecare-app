@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Toaster } from 'react-hot-toast';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { ClientOnly } from '@/components/auth/ClientOnly';
 
 // This should be declared only ONCE.
 const inter = Inter({ subsets: ['latin'] });
@@ -22,11 +21,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <AuthGuard>
-            <ClientOnly>
-              {children}
-            </ClientOnly>
-          </AuthGuard>
+          <Toaster position="bottom-right" />
+          {children}
         </AuthProvider>
       </body>
     </html>
