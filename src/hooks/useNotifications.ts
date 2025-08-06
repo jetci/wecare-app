@@ -1,39 +1,58 @@
 import useSWR from 'swr';
-import { Notification } from '@/types/notification';
+import { apiFetch } from '@/lib/api';
+import { Notification } from '@prisma/client';
 
-interface NotificationsResponse {
-  success: boolean;
-  notifications: Notification[];
+// Define a custom error type
+export class FetchError extends Error {
+  info: any;
+  status: number;
+
+  constructor(message: string, status: number, info: any) {
+    super(message);
+    this.status = status;
+    this.info = info;
+  }
 }
 
-// Fetcher for notifications array
-const fetcher = (url: string) => fetch(url, { credentials: 'include' }).then(res => res.json() as Promise<Notification[]>);
+// Generic fetcher that includes the auth token
+const fetcher = async (url: string) => {
+  const res = await apiFetch(url);
+  if (!res.ok) {
+    const info = await res.json();
+    const error = new FetchError('An error occurred while fetching the data.', res.status, info);
+    throw error;
+  }
+  return res.json();
+};
 
 export function useNotifications() {
-    const key = '/api/notifications';
-  const { data, error, isLoading, mutate } = useSWR<Notification[] | NotificationsResponse>(key, fetcher);
+  const key = '/api/notifications';
+  const { data: notifications, error, isLoading, mutate } = useSWR<Notification[]>(key, fetcher);
 
-  // Normalize response shape to Notification[]
+  const markAsRead = async (id: string) => {
+    // Optimistically update the UI
+    mutate(
+      (currentNotifications) =>
+        currentNotifications?.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      false // Do not revalidate immediately
+    );
 
-  let notifications: Notification[] = [];
-  if (Array.isArray(data)) notifications = data;
-  else if (data && 'notifications' in data) notifications = data.notifications;
-
-  // Refetch notifications
-  const refetch = () => mutate();
-
-  // Mark a notification as read and update cache
-  const deleteNotification = async (id: string) => {
-    const res = await fetch(key, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ id }),
-    });
-    if (!res.ok) throw new Error('Failed to mark notification as read');
-    await mutate();
-    return true;
+    try {
+      await apiFetch(`/api/notifications/${id}/read`, { method: 'PUT' });
+      // Trigger revalidation to ensure data consistency
+      mutate();
+    } catch (error) {
+      // If the API call fails, revert the optimistic update
+      mutate(); 
+      console.error('Failed to mark notification as read:', error);
+    }
   };
 
-  return { notifications, isLoading, error, refetch, deleteNotification };
+  return {
+    notifications: notifications || [],
+    isLoading,
+    error,
+    markAsRead,
+  };
 }
+

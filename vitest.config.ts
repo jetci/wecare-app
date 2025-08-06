@@ -1,30 +1,15 @@
-// vitest.config.ts
-import { defineConfig } from 'vitest/config'
-import path from 'path'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@/app': path.resolve(__dirname, 'app'),
-    },
-
-  },
+  plugins: [react()],
   test: {
-      include: ['src/**/*.{test,spec}.{js,ts,tsx}', 'app/**/*.{test,spec}.{js,ts,tsx}'],
-      // ปิดหลายเธรดเพื่อป้องกันหน่วยความจำล้น
-      // @ts-ignore
-      threads: false,
-      reporters: [
-        'default',
-        ['json', { outputFile: 'test-report.json' }]
-      ],
-
-
-    globals: true,                   // enable describe/it/expect globally
-    environment: 'jsdom',            // use jsdom for browser APIs
-    setupFiles: ['./vitest.setup.tsx'], // correct .tsx extension
-    testTimeout: 10000,
-    passWithNoTests: true,              // 10s per test
+    globals: true,
+    environment: 'jsdom',
+    include: ['**/*.{test,spec}.{js,ts,tsx}'],
+    alias: {
+      '@': path.resolve(__dirname, './'),
+    },
   },
-})
+});

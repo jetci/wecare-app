@@ -45,9 +45,16 @@ export default function LoginForm() {
 
       if (!res.ok) {
         console.error('   [ERROR] Response not OK. Logging response text...');
-        const errorText = await res.text();
-        console.error('   [ERROR] Response body:', errorText);
-        throw new Error(`Login failed with status: ${res.status}`);
+        const errorJson = await res.json();
+        const errorMessage = errorJson.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+
+        if (res.status === 403) {
+          throw new Error('บัญชียังไม่อนุมัติ');
+        } else if (res.status === 401) {
+          throw new Error('เลขบัตรประชาชนหรือรหัสผ่านไม่ถูกต้อง');
+        } else {
+          throw new Error(errorMessage);
+        }
       }
 
       console.log('3. [BEFORE JSON PARSE] Attempting to parse response as JSON...');
@@ -80,8 +87,7 @@ export default function LoginForm() {
       const redirectPath = roleToPath[role.toUpperCase()] || '/dashboard/community'; // Fallback
       console.log(`6. [REDIRECTING] User role: ${role}, Path: ${redirectPath}`);
 
-      // 3. Redirect the user
-      router.push(redirectPath);
+      // Redirection is now handled by AuthContext after login
 
       console.log('--- LoginForm Debug Finished ---');
     } catch (err: unknown) {
@@ -108,6 +114,8 @@ export default function LoginForm() {
             type="text"
             {...register('nationalId', { required: 'กรุณากรอกรหัสบัตรประชาชน' })}
             className="w-full mt-1 px-3 py-2 border rounded"
+            placeholder="กรอกเลขบัตรประชาชน 13 หลัก"
+            maxLength={13}
           />
           {errors.nationalId && <p className="text-red-500 text-sm">{errors.nationalId.message}</p>}
         </div>

@@ -52,6 +52,11 @@ export async function middleware(req: NextRequest) {
     const { payload } = await jose.jwtVerify(token, secret);
     const role = payload.role as string;
 
+    // Handle base /dashboard route by redirecting to the user's role-specific dashboard
+    if (pathname === '/dashboard') {
+      return NextResponse.redirect(new URL(`/dashboard/${role.toLowerCase()}`, req.url));
+    }
+
     // 5. Enforce RBAC for /dashboard routes
     if (pathname.startsWith('/dashboard')) {
       const [, , area] = pathname.split('/');

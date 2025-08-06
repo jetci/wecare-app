@@ -8,6 +8,10 @@ export async function apiFetch(input: RequestInfo, init?: RequestInit) {
   if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
 
   // เรียก API
-  const response = await fetch(input, { ...init, headers });
+    const response = await fetch(input, { 
+    ...init, 
+    headers,
+    credentials: init?.credentials ?? 'include'
+  });
   return response;
 }

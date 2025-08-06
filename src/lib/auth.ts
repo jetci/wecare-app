@@ -1,12 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'; // [FIX] รวม import ไว้ในบรรทัดเดียว
+import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-
-// Interface สำหรับข้อมูลที่ถอดรหัสได้จาก Token
-export interface AuthSession {
-  userId: string;
-  role: 'ADMIN' | 'COMMUNITY' | 'DRIVER' | 'OFFICER' | 'EXECUTIVE' | 'DEVELOPER';
-  // เพิ่ม field อื่นๆ ตามที่จำเป็น
-}
+import { AuthSession } from '@/types/auth';
 
 const getJwtSecretKey = () => {
   const secret = process.env.JWT_SECRET;
@@ -30,7 +24,7 @@ export async function verifyAuth(req: NextRequest): Promise<AuthSession | NextRe
 
   try {
     const { payload } = await jwtVerify(token, getJwtSecretKey());
-    return payload as AuthSession;
+    return payload as unknown as AuthSession;
   } catch (error) {
     return NextResponse.json({ success: false, code: 'INVALID_TOKEN', message: 'Invalid token' }, { status: 401 });
   }

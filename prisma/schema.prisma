@@ -14,6 +14,7 @@ model User {
   firstName   String
   lastName    String
   nationalId  String   @unique
+  email       String?  @unique
   phone       String?
   birthDate   DateTime? // user's birth date
   houseNumber String? // บ้านเลขที่
@@ -33,6 +34,8 @@ model User {
 
   managedPatients Patient[]      @relation("ManagedPatients")
   notifications   Notification[] @relation("UserNotifications")
+
+  @@index([nationalId])
 }
 
 model Patient {

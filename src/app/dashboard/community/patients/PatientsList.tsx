@@ -1,105 +1,178 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { AddPatientModal } from '@/components/community/AddPatientModal';
+import { usePatients } from '@/hooks/usePatients';
+import PatientModal from '@/components/community/PatientModal';
+import { Patient } from '@prisma/client';
 
-type Patient = {
-  id: string;
-  prefix: string;
-  firstName: string;
-  lastName: string;
+// A simple confirmation modal component
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  children: React.ReactNode;
+}
+
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl">
+        <h2 className="text-lg font-bold mb-4">{title}</h2>
+        <p className="mb-6">{children}</p>
+        <div className="flex justify-end space-x-4">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded-md">ยกเลิก</button>
+          <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded-md">ยืนยัน</button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default function PatientsList() {
   const { token, loading: authLoading } = useAuth();
-  const [patients, setPatients] = useState<Patient[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  const [isPatientModalOpen, setPatientModalOpen] = useState(false);
+  const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
+  const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [isConfirmOpen, setConfirmOpen] = useState(false);
+
+  // Debounce search term to avoid excessive API calls
   useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPage(1); // Reset to page 1 on new search
+    }, 500);
     return () => clearTimeout(handler);
   }, [searchTerm]);
-  const [page, setPage] = useState(1);
-  const [pageCount, setPageCount] = useState(1);
-  const pageSize = 10;
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  // Handle auth states
-  if (authLoading) {
-    return <p role="status">Loading authentication...</p>;
-  }
-  if (!token) {
-    return <p role="alert">Unauthorized</p>;
-  }
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { patients, meta, isLoading, isError, mutate } = usePatients({
+    page,
+    limit: 10,
+    search: debouncedSearchTerm,
+  });
 
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/patients?search=${encodeURIComponent(debouncedSearchTerm)}&page=${page}&limit=${pageSize}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        })
-      .then(res => res.ok ? res.json() : Promise.reject(new Error('Failed to fetch')))
-      .then((data: { patients: Patient[]; total: number }) => {
-        setPatients(data.patients);
-        const pages = Math.max(1, Math.ceil(data.total / pageSize));
-        setPageCount(pages);
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [debouncedSearchTerm, page, refreshTrigger, token]);
-
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
   const handleSuccess = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
-  }, []);
+    mutate(); // Re-fetch data after add/edit
+    setPatientModalOpen(false);
+  }, [mutate]);
 
+  const handleOpenEditModal = (patient: Patient) => {
+    setPatientToEdit(patient);
+    setPatientModalOpen(true);
+  };
 
+  const handleOpenAddModal = () => {
+    setPatientToEdit(null);
+    setPatientModalOpen(true);
+  };
 
-  const totalPages = pageCount;
-  const current = patients;
+  const handleCloseModal = () => {
+    setPatientModalOpen(false);
+    setPatientToEdit(null);
+  };
+
+  const handleDeleteClick = (patient: Patient) => {
+    setPatientToDelete(patient);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!patientToDelete || !token) return;
+
+    try {
+      const res = await fetch(`/api/patients/${patientToDelete.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to delete patient');
+      }
+
+      // Deletion successful, re-fetch data
+      mutate();
+      alert('ลบผู้ป่วยสำเร็จ');
+    } catch (error) {
+      console.error(error);
+      alert(`เกิดข้อผิดพลาด: ${error.message}`);
+    } finally {
+      setConfirmOpen(false);
+      setPatientToDelete(null);
+    }
+  };
+
+  if (authLoading) return <p className="text-center p-4">Loading authentication...</p>;
+  if (!token) return <p className="text-center p-4 text-red-500">Unauthorized. Please log in.</p>;
+
+  const renderContent = () => {
+    if (isLoading) return <p className="text-center p-4">กำลังโหลดข้อมูลผู้ป่วย...</p>;
+    if (isError) return <p className="text-center p-4 text-red-500">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>;
+    if (patients.length === 0) return <p className="text-center p-4">ไม่พบข้อมูลผู้ป่วย</p>;
+
+    return (
+      <ul className="space-y-3">
+        {patients.map((p: Patient) => (
+          <li key={p.id} className="bg-white p-4 rounded-lg shadow flex justify-between items-center">
+            <span>{p.prefix} {p.firstName} {p.lastName}</span>
+            <div className="space-x-2">
+              <button onClick={() => handleOpenEditModal(p)} className="text-blue-600 hover:underline">แก้ไข</button>
+              <button onClick={() => handleDeleteClick(p)} className="text-red-600 hover:underline">ลบ</button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  };
 
   return (
-    <>
-      {/* Header & Add Button */}
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-4 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-semibold">จัดการผู้ป่วย</h1>
-        <button onClick={openModal} className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded">+ เพิ่มผู้ป่วย</button>
+        <button onClick={handleOpenAddModal} className="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">+ เพิ่มผู้ป่วย</button>
       </div>
-      <AddPatientModal isOpen={isModalOpen} onClose={closeModal} onSuccess={handleSuccess} />
 
-      {/* Content */}
-      <div className="p-4">
-        {loading ? (
-          <p role="status">Loading...</p>
-        ) : error ? (
-          <p role="alert" aria-label={`Error: ${error}`}>Error: {error}</p>
-        ) : (
-          <>
-            <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <input className="w-full p-2 border rounded"
-                type="text"
-                placeholder="ค้นหาชื่อผู้ป่วย"
-                value={searchTerm}
-                onChange={e => { setSearchTerm(e.target.value); setPage(1); }}
-              />
-              <ul>
-                {patients?.map(p => (
-                  <li key={p.id}>{p.prefix} {p.firstName} {p.lastName}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="mt-4 flex justify-center items-center space-x-4">
-              <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Prev</button>
-              <span>{page} / {pageCount}</span>
-              <button disabled={page >= pageCount} onClick={() => setPage(page + 1)} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Next</button>
-            </div>
-          </>
-        )}
+      <PatientModal 
+        isOpen={isPatientModalOpen} 
+        onClose={handleCloseModal} 
+        onSuccess={handleSuccess}
+        patientToEdit={patientToEdit}
+      />
+      <ConfirmationModal
+        isOpen={isConfirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="ยืนยันการลบ"
+      >
+        คุณแน่ใจหรือไม่ว่าต้องการลบผู้ป่วย '{patientToDelete?.firstName} {patientToDelete?.lastName}'?
+      </ConfirmationModal>
+
+      <div className="mb-4">
+        <input
+          className="w-full p-2 border rounded-md"
+          type="text"
+          placeholder="ค้นหาจากชื่อ, นามสกุล, หรือเลขบัตรประชาชน..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+        />
       </div>
-    </>
+
+      <div className="bg-gray-50 p-4 rounded-lg">
+        {renderContent()}
+      </div>
+
+      {meta && meta.totalPages > 1 && (
+        <div className="mt-6 flex justify-center items-center space-x-4">
+          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50">ก่อนหน้า</button>
+          <span>หน้า {meta.page} / {meta.totalPages}</span>
+          <button disabled={page >= meta.totalPages} onClick={() => setPage(p => p + 1)} className="px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50">ถัดไป</button>
+        </div>
+      )}
+    </div>
   );
 }
-

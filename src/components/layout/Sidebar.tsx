@@ -18,14 +18,21 @@ import { useAuth } from '@/context/AuthContext';
 import { useHasMounted } from '@/hooks/useHasMounted'; // 1. Import useHasMounted
 
 const navigation = [
-  { name: 'ภาพรวม (Community)', href: '/dashboard/community', icon: HomeIcon, role: ['COMMUNITY', 'ADMIN'] },
-  { name: 'คำขอทั้งหมด', href: '/dashboard/community/requests', icon: InboxIcon, role: ['COMMUNITY', 'ADMIN'] },
+  // General Access
+  { name: 'ภาพรวม (Community)', href: '/dashboard/community', icon: HomeIcon, role: ['COMMUNITY', 'ADMIN', 'DEVELOPER'] },
+  { name: 'คำขอทั้งหมด', href: '/dashboard/community/requests', icon: InboxIcon, role: ['COMMUNITY', 'ADMIN', 'DEVELOPER'] },
+  
+  // Role-Specific
+  { name: 'เคสของฉัน (Driver)', href: '/dashboard/driver/cases', icon: TruckIcon, role: ['DRIVER', 'ADMIN', 'DEVELOPER'] },
+  { name: 'ข้อมูลสาธารณสุข (Officer)', href: '/dashboard/officer', icon: HeartIcon, role: ['OFFICER', 'ADMIN', 'DEVELOPER'] },
+
+  // Admin & Power Users
+  { name: 'จัดการผู้ใช้ (Admin)', href: '/dashboard/admin/users', icon: UsersIcon, role: ['ADMIN', 'DEVELOPER'] },
+  { name: 'รายงานสรุป', href: '/dashboard/reports', icon: ChartBarIcon, role: ['EXECUTIVE', 'ADMIN', 'DEVELOPER'] },
+  { name: 'แดชบอร์ดนักพัฒนา', href: '/dashboard/developer', icon: CodeBracketIcon, role: ['DEVELOPER'] },
+
+  // Universal
   { name: 'ข้อมูลส่วนตัว', href: '/dashboard/profile', icon: UserIcon, role: ['DEVELOPER', 'ADMIN', 'COMMUNITY', 'DRIVER', 'OFFICER', 'EXECUTIVE'] },
-  { name: 'แดชบอร์ดนักพัฒนา', href: '/dashboard/developer', icon: CodeBracketIcon, role: ['DEVELOPER', 'ADMIN'] },
-  { name: 'เคสของฉัน (Driver)', href: '/dashboard/driver/cases', icon: TruckIcon, role: ['DRIVER', 'ADMIN'] },
-  { name: 'ข้อมูลสาธารณสุข (Officer)', href: '/dashboard/officer', icon: HeartIcon, role: ['OFFICER', 'ADMIN'] },
-  { name: 'จัดการผู้ใช้ (Admin)', href: '/dashboard/admin', icon: UsersIcon, role: ['ADMIN'] },
-  { name: 'รายงานสรุป (Executive)', href: '/dashboard/executive', icon: ChartBarIcon, role: ['ADMIN'] },
 ];
 
 function classNames(...classes: string[]) {
@@ -34,7 +41,7 @@ function classNames(...classes: string[]) {
 
 const SidebarContent = () => {
   const hasMounted = useHasMounted(); // 2. เรียกใช้ hook
-  const { role: userRole, logout } = useAuth();
+  const { role: userRole, logout, loading } = useAuth();
 
   // 3. เราจะอ่าน pathname ก็ต่อเมื่อ component ถูก mount
   const pathname = hasMounted ? window.location.pathname : '';
@@ -48,24 +55,30 @@ const SidebarContent = () => {
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
             <ul role="list" className="-mx-2 space-y-1">
-              {navigation
-                .filter(item => userRole === 'DEVELOPER' || (userRole && item.role.includes(userRole)))
-                .map((item) => (
-                  <li key={item.name}>
-                    <a
-                      href={item.href}
-                      className={classNames(
-                        pathname.startsWith(item.href)
-                          ? 'bg-gray-800 text-white'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-800',
-                        'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                      )}
-                    >
-                      <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                      {item.name}
-                    </a>
-                  </li>
-                ))}
+              {loading ? (
+                [...Array(5)].map((_, index) => (
+                  <li key={index} className="h-10 bg-gray-800 rounded-md animate-pulse w-full"></li>
+                ))
+              ) : (
+                navigation
+                  .filter(item => userRole && item.role.includes(userRole))
+                  .map((item) => (
+                    <li key={item.name}>
+                      <a
+                        href={item.href}
+                        className={classNames(
+                          pathname.startsWith(item.href)
+                            ? 'bg-gray-800 text-white'
+                            : 'text-gray-400 hover:text-white hover:bg-gray-800',
+                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                        )}
+                      >
+                        <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+                        {item.name}
+                      </a>
+                    </li>
+                  ))
+              )}
             </ul>
           </li>
           <li className="mt-auto">

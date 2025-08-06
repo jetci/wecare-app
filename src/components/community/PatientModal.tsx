@@ -21,7 +21,17 @@ registerLocale('th', th);
 // Types for MapPicker and Modal props
 interface MapPosition { lat: number; lng: number; }
 interface MapPickerProps { onLocationChange: (lat: number, lng: number) => void; }
-interface AddPatientModalProps { isOpen: boolean; onClose: () => void; onSuccess: () => void; }
+import { Patient } from '@prisma/client';
+
+// Types for MapPicker and Modal props
+interface MapPosition { lat: number; lng: number; }
+interface MapPickerProps { onLocationChange: (lat: number, lng: number) => void; initialPosition?: MapPosition; }
+interface PatientModalProps { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSuccess: () => void; 
+  patientToEdit?: Patient | null;
+}
 
 const inputClass = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed";
 
@@ -74,7 +84,7 @@ const CustomHeader = ({
   );
 };
 
-const MapPicker: FC<MapPickerProps> = ({ onLocationChange }) => {
+const MapPicker: FC<MapPickerProps> = ({ onLocationChange, initialPosition }) => {
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const { isLoaded } = useJsApiLoader({ id: 'google-map-script', googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!, libraries: ["places"] });
   useEffect(() => {
@@ -85,7 +95,7 @@ const MapPicker: FC<MapPickerProps> = ({ onLocationChange }) => {
         onLocationChange(pos.lat, pos.lng);
       },
       () => {
-        const defaultPos = { lat: 19.921, lng: 99.213 };
+                const defaultPos = initialPosition || { lat: 13.7563, lng: 100.5018 }; // Default to Bangkok if no initial position
         setCurrentPosition(defaultPos);
         onLocationChange(defaultPos.lat, defaultPos.lng);
       }
@@ -106,8 +116,12 @@ const MapPicker: FC<MapPickerProps> = ({ onLocationChange }) => {
   );
 };
 
-export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const PatientModal: FC<PatientModalProps> = ({ isOpen, onClose, onSuccess, patientToEdit }) => {
   const { token } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isEditMode = !!patientToEdit;
+
   const {
     register,
     handleSubmit,
@@ -125,7 +139,6 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
   const watchPatientGroup = watch('patientGroup');
   const watchUseIdCardAddress = watch('useIdCardAddress');
   const watchIdCardAddress = watch(['idCardAddress_houseNumber', 'idCardAddress_moo', 'idCardAddress_phone']);
-  const [displayAge, setDisplayAge] = useState('');
   const watchBirthDate = watch('birthDate');
   const watchNationalId = watch('nationalId');
 
@@ -134,9 +147,9 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
       const totalMonths = differenceInMonths(new Date(), watchBirthDate);
       const years = Math.floor(totalMonths / 12);
       const months = totalMonths % 12;
-      setDisplayAge(`${years} ปี ${months} เดือน`);
+      const displayAge = `${years} ปี ${months} เดือน`;
     } else {
-      setDisplayAge('');
+      const displayAge = '';
     }
   }, [watchBirthDate]);
 
@@ -159,33 +172,71 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
     }
   }, [isOpen, reset]);
 
-  const onSubmit: SubmitHandler<PatientFormData> = async (data) => {
-    const toastId = toast.loading('กำลังบันทึกข้อมูลผู้ป่วย...');
+  const onSubmit: SubmitHandler<PatientFormData> = async (formData) => {
+    setLoading(true);
+    setError(null);
+
+    const apiData = {
+      ...formData,
+      lat: formData.location.lat,
+      lng: formData.location.lng,
+    };
+
+    const url = isEditMode ? `/api/patients/${patientToEdit.id}` : '/api/patients';
+    const method = isEditMode ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch('/api/patients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(data),
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(apiData)
       });
 
       const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'ไม่สามารถเพิ่มข้อมูลผู้ป่วยได้');
+      if (response.ok) {
+        toast.success(isEditMode ? 'แก้ไขข้อมูลสำเร็จ!' : 'เพิ่มคนไข้สำเร็จ!');
+        onSuccess();
+        onClose();
+      } else if (response.status === 403) {
+        toast.error('ไม่มีสิทธิ์ดำเนินการกับข้อมูลนี้');
+        onClose();
+      } else {
+        setError(result.error || 'ไม่สามารถเพิ่มข้อมูลผู้ป่วยได้');
       }
-
-      toast.success('เพิ่มข้อมูลผู้ป่วยสำเร็จ!', { id: toastId });
-      reset();
-      onSuccess();
-      onClose();
-
     } catch (error: any) {
       console.error('Failed to add patient:', error);
-      toast.error(`เกิดข้อผิดพลาด: ${error.message}`, { id: toastId });
+      setError(`เกิดข้อผิดพลาด: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLocationChange = useCallback((lat: number, lng: number) => { setValue('pickupLocation_lat', lat, { shouldValidate: true }); setValue('pickupLocation_lng', lng, { shouldValidate: true }); }, [setValue]);
+  useEffect(() => {
+    if (isEditMode && patientToEdit) {
+      reset({
+        ...patientToEdit,
+        birthDate: patientToEdit.birthDate ? new Date(patientToEdit.birthDate) : null,
+        location: patientToEdit.lat && patientToEdit.lng ? { lat: patientToEdit.lat, lng: patientToEdit.lng } : { lat: 13.7563, lng: 100.5018 }
+      });
+    } else {
+      reset({
+        firstName: '',
+        lastName: '',
+        nationalId: '',
+        phoneNumber: '',
+        birthDate: null,
+        address: '',
+        location: { lat: 13.7563, lng: 100.5018 },
+      });
+    }
+  }, [isOpen, patientToEdit, isEditMode, reset]);
+
+  const handleLocationChange = useCallback((lat: number, lng: number) => {
+    setValue('location', { lat, lng }, { shouldValidate: true });
+  }, [setValue]);
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -195,7 +246,9 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
           <div className="flex min-h-full items-center justify-center p-4">
             <Dialog.Panel className="relative w-full max-w-3xl transform rounded-lg bg-white p-6 text-left shadow-xl transition-all">
               <form onSubmit={handleSubmit(onSubmit)}>
-                <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">เพิ่มผู้ป่วยในความดูแล</Dialog.Title>
+                <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                  {isEditMode ? 'แก้ไขข้อมูลคนไข้' : 'เพิ่มคนไข้ใหม่'}
+                </Dialog.Title>
                 
                 <div className="mt-4 grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-6">
                   {/* Personal Info */}
@@ -206,7 +259,7 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
                   <div className="sm:col-span-1"><label>เพศ</label><input {...register('gender')} readOnly className={inputClass} /></div>
                   <div className="sm:col-span-2"><label>วัน/เดือน/ปีเกิด</label><Controller control={control} name="birthDate" render={({ field }) => (<DatePicker locale="th" selected={field.value} onChange={(date: Date | null) => field.onChange(date)} maxDate={new Date()} dateFormat="dd/MM/yyyy" className={inputClass} placeholderText="วว/ดด/พศ" renderCustomHeader={(props) => <CustomHeader {...props} />} />)} />{errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate.message}</p>}</div>
                   <div className="sm:col-span-1"><label>กรุ๊ปเลือด</label><select {...register('bloodType')} className={inputClass}><option value="">-</option><option>A</option><option>B</option><option>AB</option><option>O</option></select></div>
-                                    <div className="sm:col-span-1"><label>อายุ</label><input value={displayAge} readOnly className={inputClass} /></div>
+                  <div className="sm:col-span-1"><label>อายุ</label><input value={watchBirthDate ? `${differenceInMonths(new Date(), watchBirthDate)} เดือน` : ''} readOnly className={inputClass} /></div>
 
                   {/* ID Card Address */}
                   <div className="sm:col-span-6"><h4 className="font-medium text-gray-800">ที่อยู่ตามบัตรประชาชน</h4></div>
@@ -233,22 +286,18 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
                   <div className="sm:col-span-6"><label>ข้อมูลสุขภาพเบื้องต้น</label><textarea {...register('basicHealthInfo')} rows={3} className={inputClass} /></div>
 
                   {/* Map */}
-                  <div className="sm:col-span-6"><label>ตำแหน่งรับผู้ป่วย</label><MapPicker onLocationChange={handleLocationChange} />{errors.pickupLocation_lat && <p className="text-red-500 text-xs mt-1">{errors.pickupLocation_lat.message}</p>}</div>
+                  <div className="sm:col-span-6"><label>ตำแหน่งรับผู้ป่วย</label><MapPicker onLocationChange={handleLocationChange} initialPosition={isEditMode && patientToEdit ? { lat: patientToEdit.lat, lng: patientToEdit.lng } : undefined} />{errors.pickupLocation_lat && <p className="text-red-500 text-xs mt-1">{errors.pickupLocation_lat.message}</p>}</div>
                   <div className="sm:col-span-6"><label>หมายเหตุ/จุดสังเกต</label><textarea {...register('notes')} rows={2} className={inputClass} /></div>
                 
                 </div>
 
                 <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                  <button type="submit" disabled={isSubmitting || (!!watchNationalId && !isValidThaiID(watchNationalId))} className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed sm:col-start-2">
-                    {isSubmitting ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        กำลังบันทึก...
-                      </>
-                    ) : 'บันทึกข้อมูล'}
+                  <button
+                    type="submit"
+                    disabled={loading || !isValid}
+                    className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-300 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'กำลังบันทึก...' : (isEditMode ? 'บันทึกการแก้ไข' : 'เพิ่มคนไข้')}
                   </button>
                   <button type="button" onClick={onClose} className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">ยกเลิก</button>
                 </div>
@@ -260,3 +309,5 @@ export const AddPatientModal: FC<AddPatientModalProps> = ({ isOpen, onClose, onS
     </Transition.Root>
   );
 };
+
+export default PatientModal;
