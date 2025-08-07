@@ -1,23 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
-import { PrismaClient } from '@prisma/client';
+import { verifyAuth } from '@/lib/auth';
+import { type AuthSession } from '@/types/auth';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
-async function verifyToken(request: NextRequest) {
-  const auth = request.headers.get('authorization') || '';
-  let token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!token) token = request.cookies.get('accessToken')?.value || '';
-  if (!token) throw new Error('Unauthorized');
-  const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET!));
-  const userJwt = payload as any;
-  if (!userJwt.userId) throw new Error('Invalid token');
-  return { userId: userJwt.userId, role: (userJwt.role as string).toUpperCase() };
-}
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId, role } = await verifyToken(request);
+    const authResult = await verifyAuth(request);
+    if (!('session' in authResult)) {
+      return authResult;
+    }
+    const { session } = authResult;
+    const { userId, role } = session as AuthSession;
     // Only COMMUNITY members or DEVELOPER (superuser) can list patients
     if (!(role === 'COMMUNITY' || role === 'DEVELOPER')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -53,7 +48,12 @@ export async function GET(request: NextRequest) {
 // Create new patient (COMMUNITY or DEVELOPER)
 export async function POST(request: NextRequest) {
   try {
-    const { userId, role } = await verifyToken(request);
+    const authResult = await verifyAuth(request);
+    if (!('session' in authResult)) {
+      return authResult;
+    }
+    const { session } = authResult;
+    const { userId, role } = session as AuthSession;
     if (!(role === 'COMMUNITY' || role === 'DEVELOPER')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
