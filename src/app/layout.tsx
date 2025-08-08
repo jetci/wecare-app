@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { Toaster } from 'react-hot-toast';
+
 import './globals.css';
-import { AuthProvider } from '@/context/AuthContext';
+import Providers from './Providers';
 
 // This should be declared only ONCE.
 const inter = Inter({ subsets: ['latin'] });
@@ -18,12 +18,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <AuthProvider>
-          <Toaster position="bottom-right" />
-          {children}
-        </AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
+        <main>
+          <Providers>{children}</Providers>
+        </main>
       </body>
     </html>
   );

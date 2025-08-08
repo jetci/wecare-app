@@ -1,133 +1,130 @@
-"use client";
+'use client';
 
-import React, { useMemo } from "react";
-import DashboardLayout from "../layout";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  CartesianGrid,
-} from "recharts";
-import { KpiCard } from "@/components/dashboard/KpiCard";
-import { exportCSV, exportPDF } from "@/lib/export";
-import RoleGuard from "@/components/RoleGuard";
-import { Role } from "@/types/roles";
-import { useExecutiveMetrics } from "@/hooks/useExecutiveMetrics";
-import ExecutiveCharts, { ExecutiveChartData } from "./ExecutiveCharts";
+import { useEffect, useState } from 'react';
+import BaseDashboard from '@/components/dashboard/BaseDashboard';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { apiFetch } from '@/lib/apiFetch';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/Alert';
+import { Terminal, ShieldAlert } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+
+interface ExecutiveData {
+  totalRequests: number;
+  totalPatientsServed: number;
+  systemUptime: string;
+  overallSatisfaction: string;
+  regionalPerformance: { id: number; region: string; value: number; trend: 'up' | 'down' | 'stable' }[];
+}
+
+const KPICard = ({ title, value }: { title: string; value: string | number }) => (
+  <div className="p-6 bg-white rounded-lg shadow-md text-center">
+    <h3 className="text-lg font-medium text-gray-500">{title}</h3>
+    <p className="text-3xl font-bold">{value}</p>
+  </div>
+);
+
+const LoadingSkeleton = () => (
+  <div className="space-y-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <Skeleton className="h-32 rounded-lg" />
+      <Skeleton className="h-32 rounded-lg" />
+      <Skeleton className="h-32 rounded-lg" />
+      <Skeleton className="h-32 rounded-lg" />
+    </div>
+    <div className="space-y-4">
+      <Skeleton className="h-10 w-1/4 rounded-lg" />
+      <div className="space-y-2">
+        <Skeleton className="h-12 w-full rounded-lg" />
+        <Skeleton className="h-12 w-full rounded-lg" />
+      </div>
+    </div>
+  </div>
+);
 
 export default function ExecutiveDashboardPage() {
-  const { summary, leaderboard, isLoading, isError } = useExecutiveMetrics();
+  const { user } = useAuth();
+  const [data, setData] = useState<ExecutiveData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-full p-4">Loading...</div>;
-  }
-  if (isError || !summary || !leaderboard) {
-    return <p className="p-4 text-red-500">Failed to load dashboard data</p>;
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) {
+        setError('Authentication required. Please log in.');
+        setLoading(false);
+        return;
+      }
 
-  const {
-    totalDaily,
-    totalWeekly,
-    totalMonthly,
-    avgResponseTime,
-    satisfactionScore,
-    monthlyTrends,
-    ratingTrends,
-  } = summary;
+      if (user.role !== 'executive') {
+        setError('Access Denied: You do not have permission to view this dashboard.');
+        setLoading(false);
+        return;
+      }
 
-  // Convert to Buddhist Era (BE) years
-  const monthlyTrendsBE = useMemo(
-    () =>
-      monthlyTrends.map(({ month, count }) => {
-        const [y, m] = month.split("-");
-        const beYear = Number(y) + 543;
-        return { month: `${beYear}-${m}`, count };
-      }),
-    [monthlyTrends]
-  );
+      try {
+        setLoading(true);
+        const response = await apiFetch('/api/dashboard/executive');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        setData(result);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'An unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const ratingTrendsBE = useMemo(
-    () =>
-      ratingTrends.map(({ date, rating }) => {
-        const d = new Date(date);
-        const day = String(d.getDate()).padStart(2, "0");
-        const mon = String(d.getMonth() + 1).padStart(2, "0");
-        const beYear = d.getFullYear() + 543;
-        return { date: `${day}/${mon}/${beYear}`, rating };
-      }),
-    [ratingTrends]
-  );
+    fetchData();
+  }, [user]);
 
-
-  return (
-    <RoleGuard allowedRoles={[Role.EXECUTIVE]}>
-      <DashboardLayout role="executive">
-        <div className="p-4 space-y-6">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            <KpiCard title="วันนี้" count={totalDaily} />
-            <KpiCard title="สัปดาห์นี้" count={totalWeekly} />
-            <KpiCard title="เดือนนี้" count={totalMonthly} />
-            <KpiCard title="Avg Response Time" count={avgResponseTime} suffix="s" />
-            <KpiCard title="Satisfaction" count={satisfactionScore} suffix="%" />
+  const renderContent = () => {
+    if (loading) return <LoadingSkeleton />;
+    if (error) {
+      const isAccessError = error.includes('Access Denied');
+      return (
+        <Alert variant={isAccessError ? 'default' : 'destructive'} className={isAccessError ? 'bg-yellow-100 border-yellow-500 text-yellow-800' : ''}>
+          {isAccessError ? <ShieldAlert className="h-4 w-4" /> : <Terminal className="h-4 w-4" />}
+          <AlertTitle>{isAccessError ? 'Access Denied' : 'Error'}</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      );
+    }
+    if (data) {
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <KPICard title="Total Requests" value={data.totalRequests} />
+            <KPICard title="Patients Served" value={data.totalPatientsServed} />
+            <KPICard title="System Uptime" value={`${data.systemUptime}%`} />
+            <KPICard title="Satisfaction" value={`${data.overallSatisfaction}%`} />
           </div>
-
-          {/* Charts */}
-          <section className="my-6">
-            <ExecutiveCharts data={{
-              monthlyRides: monthlyTrendsBE.map(({ month, count }) => ({ month, count })),
-              weeklySignups: ratingTrendsBE.map(({ date, rating }) => ({ week: date, users: rating })),
-              rideTypeDistribution: summary.rideTypeDistribution || [],
-            }} />
-          </section>
-
-          {/* Leaderboard */}
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">Top Drivers</h3>
-            <table className="w-full text-left">
-              <thead>
-                <tr>
-                  <th className="p-2">อันดับ</th>
-                  <th className="p-2">ชื่อ</th>
-                  <th className="p-2">จำนวน</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboard.map((d, i) => (
-                  <tr key={d.id} className="border-t">
-                    <td className="p-2">{i + 1}</td>
-                    <td className="p-2">{d.name}</td>
-                    <td className="p-2">{d.count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Export Buttons */}
-          <div className="flex space-x-2">
-            <button
-              data-testid="export-csv"
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-              onClick={() => exportCSV(summary)}
-            >
-              ส่งออก CSV
-            </button>
-            <button
-              data-testid="export-pdf"
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-              onClick={() => exportPDF(summary)}
-            >
-              ส่งออก PDF
-            </button>
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Regional Performance</h3>
+            <div className="bg-white rounded-lg shadow-md p-4 space-y-4">
+              {data.regionalPerformance.map((item) => (
+                <div key={item.id} className="border-b pb-2 mb-2 flex justify-between items-center">
+                  <p className="font-bold">{item.region}</p>
+                  <p className={`font-semibold ${item.trend === 'up' ? 'text-green-600' : item.trend === 'down' ? 'text-red-600' : 'text-gray-500'}`}>
+                    {item.value} ({item.trend})
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </DashboardLayout>
-    </RoleGuard>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <BaseDashboard
+      title="Executive Dashboard"
+      description="ภาพรวมข้อมูลสรุปเชิงกลยุทธ์สำหรับผู้บริหาร"
+    >
+      {renderContent()}
+    </BaseDashboard>
   );
 }

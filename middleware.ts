@@ -62,6 +62,9 @@ export async function middleware(req: NextRequest) {
       const [, , area] = pathname.split('/');
       const allowedRoles = acl[area];
 
+      // [DEBUG] Log access control check details
+      console.log(`[ACL Check] Path: ${pathname}, Area: ${area}, User Role: ${role}, Allowed Roles: ${JSON.stringify(allowedRoles)}`);
+
       if (!allowedRoles || !allowedRoles.includes(role)) {
         // Redirect to a general dashboard page if user's role is not allowed for the specific area
         return NextResponse.redirect(new URL('/dashboard', req.url));

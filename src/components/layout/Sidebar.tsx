@@ -24,10 +24,10 @@ const navigation = [
   
   // Role-Specific
   { name: 'เคสของฉัน (Driver)', href: '/dashboard/driver/cases', icon: TruckIcon, role: ['DRIVER', 'ADMIN', 'DEVELOPER'] },
-  { name: 'ข้อมูลสาธารณสุข (Officer)', href: '/dashboard/officer', icon: HeartIcon, role: ['OFFICER', 'ADMIN', 'DEVELOPER'] },
+  { name: 'ข้อมูลสาธารณสุข (Health Officer)', href: '/dashboard/health-officer', icon: HeartIcon, role: ['HEALTH_OFFICER', 'ADMIN', 'DEVELOPER'] },
 
   // Admin & Power Users
-  { name: 'จัดการผู้ใช้ (Admin)', href: '/dashboard/admin/users', icon: UsersIcon, role: ['ADMIN', 'DEVELOPER'] },
+  { name: 'แดชบอร์ดผู้ดูแลระบบ', href: '/dashboard/admin', icon: UsersIcon, role: ['ADMIN', 'DEVELOPER'] },
   { name: 'รายงานสรุป', href: '/dashboard/reports', icon: ChartBarIcon, role: ['EXECUTIVE', 'ADMIN', 'DEVELOPER'] },
   { name: 'แดชบอร์ดนักพัฒนา', href: '/dashboard/developer', icon: CodeBracketIcon, role: ['DEVELOPER'] },
 
@@ -48,8 +48,15 @@ const SidebarContent = () => {
   // SA-X: Log all relevant auth states for debugging
   console.log('[Sidebar] Auth State:', { loading, initialChecked, isAuthenticated, userRole });
 
-  const filteredNavigation = userRole 
-    ? navigation.filter(item => item.role.includes(userRole))
+  const filteredNavigation = userRole
+    ? navigation.filter(item => {
+        // DEVELOPER can see all menus for testing and debugging purposes
+        if (userRole === 'DEVELOPER') {
+          return true;
+        }
+        // For other roles, check if their role is included in the item's role array
+        return item.role.includes(userRole);
+      })
     : [];
 
   if (userRole) {
@@ -66,7 +73,7 @@ const SidebarContent = () => {
           <li>
             <ul role="list" className="-mx-2 space-y-1">
               {/* SA-X: Show skeleton ONLY while loading to prevent premature rendering */}
-              {loading &&
+              {(loading || !initialChecked) &&
                 [...Array(6)].map((_, index) => (
                   <li key={`skel-${index}`} className="h-10 bg-gray-800 rounded-md animate-pulse w-full"></li>
                 ))}
@@ -91,7 +98,7 @@ const SidebarContent = () => {
                 ))}
 
               {/* SA-X: Show error only AFTER initial check is complete and user is NOT authenticated */}
-              {initialChecked && !isAuthenticated && (() => {
+              {initialChecked && !loading && !isAuthenticated && (() => {
                 // DEV.11: Add console.error for deep debugging
                 console.error('[Sidebar] Fallback Error Triggered. Auth State:', { loading, isAuthenticated, userRole });
                 return (
@@ -115,7 +122,7 @@ const SidebarContent = () => {
 };
 
 export const Sidebar = () => (
-  <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+  <div className="hidden lg:relative lg:z-10 lg:flex lg:w-72 lg:flex-col">
     <SidebarContent />
   </div>
 );

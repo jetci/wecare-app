@@ -13,22 +13,14 @@ export const apiFetch = async (url: string, options: RequestInit = {}): Promise<
     requestHeaders.set('Content-Type', 'application/json');
   }
 
-  // Add the Authorization token if it exists (client-side only).
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      requestHeaders.set('Authorization', `Bearer ${token}`);
-      console.log('[apiFetch] Token attached to request header.');
-    }
-  }
 
-  const config: RequestInit = {
-    ...options,
-    headers: requestHeaders,
-  };
 
   try {
-    const response = await fetch(fullUrl, config);
+    const response = await fetch(fullUrl, {
+      ...options,
+      headers: requestHeaders,
+      credentials: 'include', // Ensure cookies are sent with the request
+    });
     return response;
   } catch (error) {
     console.error('API Fetch Error:', error);

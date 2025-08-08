@@ -4,7 +4,7 @@ import { SignJWT } from 'jose';
 import { LoginSchema } from '@/schemas/login.schema';
 import prisma from '@/lib/prisma';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!)
 
 export async function POST(request: Request) {
   try {
@@ -62,10 +62,15 @@ export async function POST(request: Request) {
 
     console.log("✅ Login API Response (Command X Verification):", successResponse);
 
-    // Use NextResponse.json for a robust JSON response, then set the cookie.
     const response = NextResponse.json(successResponse);
-    const cookie = `token=${accessToken}; HttpOnly; Path=/; SameSite=Strict; Max-Age=${60 * 60 * 24 * 7}; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''}`;
-    response.headers.set('Set-Cookie', cookie);
+
+    response.cookies.set('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
 
     return response;
 

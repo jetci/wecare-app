@@ -2,10 +2,10 @@ import React, { useState } from 'react'
 import useSWR from 'swr'
 import { User, LogEntry, ApiKey, ConfirmInfo, UnknownObject } from '@/types/components'
 import { ConfirmationModal } from '../ui/ConfirmationModal'
-import { SummaryCard } from '../ui/SummaryCard'
 import toast from 'react-hot-toast'
+import { apiFetch } from '@/lib/apiFetch';
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
+const fetcher = (url: string) => apiFetch(url).then((res: any) => res.json());
 const tabs = [
   'Users', 'Logs', 'Settings', 'API Keys', 'Maintenance', 'Thresholds'
 ]
@@ -22,16 +22,24 @@ const AdminDashboard: React.FC = () => {
   const { data: thresholds, error: thrError, mutate: mutateThr } = useSWR<UnknownObject[]>('/api/admin/settings/thresholds', fetcher)
 
   // Actions
-  const handleAction = async (url: string, method='PUT', body?: UnknownObject, refresh?: () => void) => {
+  const handleAction = async (url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'PUT', body?: UnknownObject, refresh?: () => void) => {
     try {
-      const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: body && JSON.stringify(body) })
-      if (!res.ok) throw new Error('Action failed')
-      toast.success('สำเร็จ')
-      refresh && refresh()
+      const res = await apiFetch(url, { 
+        method,
+        headers: {'Content-Type':'application/json'},
+        body: body ? JSON.stringify(body) : undefined
+      });
+
+      // apiFetch throws an error for non-ok responses, so we just need to check for success.
+      toast.success('Action successful');
+      if (refresh) {
+        refresh();
+      }
     } catch (err) {
-      toast.error('ล้มเหลว')
+      console.error('Action failed:', err);
+      toast.error('Action failed. See console for details.');
     }
-  }
+  };
 
   return (
     <div className="p-4">

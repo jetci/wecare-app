@@ -5,7 +5,7 @@ import NotificationDropdown from '../common/NotificationDropdown'
 export default function Navbar() {
   const [dark, setDark] = React.useState<boolean>(false)
 
-  React.useEffect(() => {
+      React.useEffect(() => {
     if (typeof window !== 'undefined') {
       if (dark) {
         document.documentElement.classList.add('dark')

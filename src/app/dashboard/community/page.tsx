@@ -1,220 +1,172 @@
 'use client';
 
-import { PlusIcon, ClockIcon, CheckCircleIcon, XCircleIcon, InboxIcon, UserPlusIcon } from '@heroicons/react/24/outline';
-import React, { useState, useMemo } from 'react';
+import type { Patient } from '@/types/entities';
+import Modal from '@/components/ui/Modal';
+import PatientDetailModal from '@/components/dashboard/community/PatientDetailModal';
+
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import BaseDashboard from '@/components/dashboard/BaseDashboard';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { apiFetch } from '@/lib/apiFetch';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/Alert';
+import { Terminal } from 'lucide-react';
+import PatientTable from '@/components/dashboard/community/PatientTable';
 
-import MapModal from '@/components/community/MapModal';
-import { AddPatientModal } from '@/components/community/AddPatientModal';
+// Data structure for the API response
+interface CommunityData {
+  activeRequests: number;
+  totalPatients: number;
+  volunteersOnline: number;
+}
 
-import { useCommunityRequests } from '@/hooks/useCommunityRequests';
-import { usePatients } from '@/hooks/usePatients';
+// Reusable KPI Card component
+const KPICard = ({ title, value }: { title: string; value: string | number }) => (
+  <div className="p-6 bg-white rounded-lg shadow-md">
+    <h3 className="text-lg font-medium text-gray-500">{title}</h3>
+    <p className="text-3xl font-bold">{value}</p>
+  </div>
+);
 
+// Placeholder for Recent Updates section
+const RecentUpdates = () => (
+  <div>
+    <h2 className="text-2xl font-semibold mb-4">Recent Updates</h2>
+    <div className="p-6 bg-white rounded-lg shadow-md min-h-[200px] flex items-center justify-center">
+      <p className="text-gray-400">Recent updates will be displayed here.</p>
+    </div>
+  </div>
+);
 
-const StatusBadge = ({ status }: { status: string }) => {
-    let colorClasses = 'bg-gray-100 text-gray-800';
-    if (status === 'PENDING') colorClasses = 'bg-yellow-100 text-yellow-800';
-    if (status === 'APPROVED') colorClasses = 'bg-blue-100 text-blue-800';
-    if (status === 'COMPLETED') colorClasses = 'bg-green-100 text-green-800';
-    return <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${colorClasses}`}>{status}</span>;
-};
+// A more focused loading skeleton for the initial page structure
+const LoadingSkeleton = () => (
+  <div className="space-y-8">
+    {/* KPI Skeleton */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <Skeleton className="h-32 rounded-lg" />
+      <Skeleton className="h-32 rounded-lg" />
+      <Skeleton className="h-32 rounded-lg" />
+    </div>
+    {/* Patient Table Skeleton */}
+    <div>
+      <Skeleton className="h-10 w-1/3 mb-4 rounded-lg" />
+      <Skeleton className="h-64 w-full rounded-lg" />
+    </div>
+    {/* Recent Updates Skeleton */}
+    <div>
+      <Skeleton className="h-10 w-1/4 mb-4 rounded-lg" />
+      <Skeleton className="h-48 w-full rounded-lg" />
+    </div>
+  </div>
+);
 
 export default function CommunityDashboardPage() {
   const router = useRouter();
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  
-  const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
-  
-  const [selectedPatientId, setSelectedPatientId] = useState<string>('all');
+  const auth = useAuth();
+  const [data, setData] = useState<CommunityData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
-  const { patients, isLoading: patientsLoading, mutate: mutatePatients } = usePatients();
-  const { requests, isLoading: requestsLoading, isError, mutate: mutateRequests } = useCommunityRequests();
-
-  const filteredRequests = useMemo(() => {
-    if (selectedPatientId === 'all') {
-      return requests;
-    }
-    return requests.filter((req: any) => req.nationalId === selectedPatientId);
-  }, [requests, selectedPatientId]);
-
-  // Map of patientId to patient full name
-  const patientMap = useMemo(() => Object.fromEntries(
-    patients.map((p: any) => [p.nationalId, `${p.firstName} ${p.lastName}`])
-  ), [patients]);
-  // Map of patientId to gender
-  const patientGenderMap = useMemo(() => Object.fromEntries(
-    patients.map((p: any) => [p.nationalId, p.gender])
-  ), [patients]);
-
-
-  const summaryStats = useMemo(() => [
-    { name: 'กำลังรออนุมัติ', value: requests.filter((r: any) => r.status === 'PENDING').length, icon: ClockIcon },
-    { name: 'อนุมัติแล้ว', value: requests.filter((r: any) => r.status === 'APPROVED').length, icon: CheckCircleIcon },
-    { name: 'ปฏิเสธ', value: requests.filter((r: any) => r.status === 'REJECTED').length, icon: XCircleIcon },
-  ], [requests]);
-
-  const handleAddPatientSuccess = () => {
-    mutatePatients();
-    setIsAddPatientModalOpen(false);
+  const handleRowClick = (patientId: string) => {
+    setSelectedPatientId(patientId);
+    setIsDetailModalOpen(true);
   };
 
-  const mapLocations = useMemo(() => requests.map((r: any) => ({ lat: r.pickupLocation_lat, lng: r.pickupLocation_lng })), [requests]);
+  const handleCloseModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedPatientId(null);
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null); // Reset error on new fetch
+        const response = await apiFetch('/api/dashboard/community');
+        if (!response.ok) {
+          if (response.status === 401) {
+            auth.logout();
+            setError('Session หมดอายุ กรุณาเข้าสู่ระบบใหม่');
+            router.push('/login');
+            return; // Stop further execution
+          }
+          const errorData = await response.json().catch(() => null); // Try to get more info
+          throw new Error(`HTTP error! Status: ${response.status} - ${errorData?.message || 'No error message'}`);
+        }
+        const result = await response.json();
+        setData(result);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'An unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (auth.initialChecked) {
+      fetchData();
+    }
+  }, [auth.initialChecked]);
 
   const renderContent = () => {
-    if (requestsLoading) {
+    if (loading) {
+      return <LoadingSkeleton />;
+    }
+
+    if (error) {
       return (
-        <div className="mt-4 overflow-x-auto w-full rounded-lg bg-white shadow">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">หัวข้อ</th>
-                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">ประเภท</th>
-                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">สถานะ</th>
-                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">ผู้ป่วย</th>
-                <th className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase text-gray-500">เพศ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {Array.from({ length: 5 }).map((_, idx) => (
-                <tr key={idx} className="animate-pulse">
-                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-3/4" /></td>
-                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-1/2" /></td>
-                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-1/3" /></td>
-                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-3/4" /></td>
-                  <td className="px-2 py-2 sm:px-6 sm:py-4"><div className="h-4 bg-gray-200 rounded w-1/4" /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Alert variant="destructive">
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Error Loading Dashboard</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       );
     }
-    if (isError) {
-      return <div className="text-center py-10 text-red-500"><p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p></div>;
-    }
-    if (filteredRequests.length === 0) {
+
+    if (data) {
       return (
-        <div className="text-center py-16 px-4 rounded-lg border-2 border-dashed border-gray-300 mt-8">
-          <InboxIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-semibold text-gray-900">ยังไม่มีคำขอรับบริการ</h3>
-          <p className="mt-1 text-sm text-gray-500">เริ่มต้นสร้างคำขอรับบริการครั้งแรกของคุณได้เลย</p>
+        <div className="space-y-8">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <KPICard title="Active Requests" value={data.activeRequests} />
+            <KPICard title="Total Patients" value={data.totalPatients} />
+            <KPICard title="Volunteers Online" value={data.volunteersOnline} />
+          </div>
+
+          {/* Patient Table Section */}
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Patient Overview</h2>
+            <PatientTable onRowClick={handleRowClick} />
+          </div>
+
+          {/* Recent Updates Section */}
+          <RecentUpdates />
         </div>
       );
     }
 
-    return (
-      <div className="mt-4 overflow-x-auto w-full rounded-lg bg-white shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">หัวข้อ</th>
-              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">ประเภท</th>
-              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">สถานะ</th>
-              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">ผู้ป่วย</th>
-              <th scope="col" className="px-2 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium uppercase tracking-wider text-gray-500">เพศ</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {filteredRequests.map((request: any) => (
-              <tr key={request.id}>
-                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{request.title}</td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{request.type}</td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500"><StatusBadge status={request.status} /></td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{patientMap[request.nationalId] || '-'}</td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{patientGenderMap[request.nationalId] || '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+    return null; // Should not happen if logic is correct
   };
 
   return (
-    <>
-      <div className="space-y-8">
-        <div className="sm:flex sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">ภาพรวมของคุณ</h1>
-          <div className="mt-4 sm:mt-0 sm:ml-4 flex items-center gap-x-2">
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/community/requests/new')}
-              className="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-            >
-              <PlusIcon className="-ml-0.5 h-5 w-5" />
-              สร้างคำขอใหม่
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsAddPatientModalOpen(true)}
-              className="inline-flex items-center gap-x-2 rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            >
-              <UserPlusIcon className="-ml-0.5 h-5 w-5" />
-              เพิ่มผู้ป่วยในความดูแล
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {summaryStats.map((item) => (
-            <div key={item.name} className="overflow-x-auto rounded-lg bg-white shadow p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <item.icon className="h-6 w-6 text-gray-400" aria-hidden="true" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="truncate text-sm font-medium text-gray-500">{item.name}</dt>
-                    <dd>
-                      <div className="text-lg font-medium text-gray-900">{item.value}</div>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div>
-          <div className="sm:flex sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">รายการคำขอล่าสุด</h2>
-            {patients.length > 0 && (
-              <div className="mt-4 sm:mt-0">
-                <label htmlFor="patient-selector" className="sr-only">เลือกผู้ป่วย</label>
-                <select 
-                  id="patient-selector" 
-                  value={selectedPatientId} 
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedPatientId(e.target.value)} 
-                  className="rounded-md border-gray-300 shadow-sm"
-                >
-                  <option value="all">ดูทั้งหมด</option>
-                  {patients.map((p: any) => (
-                    <option key={p.nationalId} value={p.nationalId}>{p.firstName} {p.lastName}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-          {renderContent()}
-        </div>
-      </div>
-      
-       
-        
-        
-        
-      <AddPatientModal
-        isOpen={isAddPatientModalOpen} 
-        onClose={() => setIsAddPatientModalOpen(false)}
-        onSuccess={handleAddPatientSuccess}
-      />
-      <MapModal
-        open={isMapModalOpen}
-        onClose={() => setIsMapModalOpen(false)}
-        locations={mapLocations}
-        center={mapLocations[0] ?? { lat: 0, lng: 0 }}
-        zoom={12}
-      />
-    </>
+    <BaseDashboard
+      title="Community Dashboard"
+      description="Initial overview of community health metrics and patient data."
+    >
+      {renderContent()}
+      {isDetailModalOpen && selectedPatientId && (
+        <Modal open={isDetailModalOpen} onClose={handleCloseModal} title="Patient Details">
+          <PatientDetailModal
+            patientId={selectedPatientId}
+            isOpen={isDetailModalOpen}
+            onClose={handleCloseModal}
+            onEdit={() => console.log('Edit clicked')}
+            onDelete={() => console.log('Delete clicked')}
+          />
+        </Modal>
+      )}
+    </BaseDashboard>
   );
 }

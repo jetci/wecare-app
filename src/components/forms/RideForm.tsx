@@ -100,7 +100,7 @@ export function RideForm({ onSuccess, onClose }: RideFormProps) {
         <div className="flex justify-end space-x-2">
           <button
             type="button"
-            onClick={onClose}
+            onClick={onSuccess}
             className="px-4 py-2 bg-gray-200 rounded"
             disabled={isSubmitting}
             aria-label="ยกเลิก"

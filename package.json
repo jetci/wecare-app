@@ -41,6 +41,8 @@
     "test": "vitest",
     "test:watch": "vitest",
     "test:coverage": "cross-env NODE_OPTIONS=--max_old_space_size=4096 vitest run --coverage",
+    "test:frontend": "cross-env NODE_OPTIONS=--max_old_space_size=8192 vitest run src/components",
+    "test:backend": "cross-env NODE_OPTIONS=--max_old_space_size=8192 vitest run auth-service/tests",
     "test:api": "vitest run --config vitest.config.api.ts",
     "seed": "ts-node --swc prisma/seed.ts",
     "type-check": "tsc --noEmit"
@@ -56,7 +58,9 @@
     "@types/react-datepicker": "^6.2.0",
     "bcryptjs": "^3.0.2",
     "browser-image-compression": "^2.0.2",
+    "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "formidable": "^3.5.4",
     "framer-motion": "^12.18.1",
@@ -79,6 +83,7 @@
     "react-window": "^1.8.11",
     "recharts": "^2.15.4",
     "swr": "^2.3.4",
+    "tailwind-merge": "^3.3.1",
     "yup": "^1.6.1",
     "zod": "^3.24.4"
   },
@@ -94,7 +99,6 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
-    "@types/jest": "^29.5.14",
     "@types/leaflet": "^1.9.18",
     "@types/node": "^20.19.9",
     "@types/papaparse": "^5.3.16",
@@ -104,7 +108,7 @@
     "@types/react-window": "^1.8.8",
     "@types/testing-library__react-hooks": "^3.4.1",
     "@vitejs/plugin-react": "^4.7.0",
-    "@vitest/coverage-istanbul": "^3.2.4",
+    "@vitest/coverage-istanbul": "^1.6.0",
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
     "cypress": "^14.5.0",
@@ -122,6 +126,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.2"
+    "vitest": "^1.6.0"
   }
 }

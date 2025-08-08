@@ -1,8 +1,14 @@
 'use client';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Role } from '@/types/roles';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+
+const LoadingScreen = () => (
+  <div className="flex h-screen items-center justify-center bg-gray-100">
+    <p>Loading...</p>
+  </div>
+);
 
 type RoleGuardProps = {
   allowedRoles: Role[];
@@ -10,32 +16,31 @@ type RoleGuardProps = {
 };
 
 export default function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
-  const { user, role, isAuthenticated } = useAuth();
+  const { role, loading } = useAuth();
   const router = useRouter();
 
-  // Wait for auth to initialize
-  if (!isAuthenticated) {
-    return null;
+  if (loading) {
+    return <LoadingScreen />;
   }
 
-  // Map role string to enum
   const userRole = role ? Role[role.toUpperCase() as keyof typeof Role] : undefined;
 
-  // Developer bypass for all dashboards
+  // Developer has superuser access
   if (userRole === Role.DEVELOPER) {
     return <>{children}</>;
   }
 
-  // Redirect unauthorized roles
-  useEffect(() => {
-    if (!userRole || !allowedRoles.includes(userRole)) {
+  // Check if the user has one of the allowed roles
+  const isAuthorized = userRole && allowedRoles.includes(userRole);
+
+  if (!isAuthorized) {
+    // Redirect to a safe page if not authorized. 
+    // Using router.replace to avoid adding to browser history.
+    if (typeof window !== 'undefined') {
       router.replace('/dashboard');
     }
-  }, [userRole, allowedRoles, router]);
-
-  // Render allowed users
-  if (userRole && allowedRoles.includes(userRole)) {
-    return <>{children}</>;
+    return null; // Render nothing while redirecting
   }
-  return null;
+
+  return <>{children}</>;
 }

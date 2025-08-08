@@ -11,12 +11,16 @@ const getJwtSecretKey = () => {
 };
 
 /**
- * Verifies the JWT token from the request headers and returns the session payload.
+ * Verifies the JWT token from the request headers or cookies and returns the session payload.
  * @param req The NextRequest object.
  * @returns A promise that resolves to the AuthSession payload or NextResponse if invalid.
  */
 export async function verifyAuth(req: NextRequest): Promise<AuthSession | NextResponse> {
-  const token = req.headers.get('authorization')?.split(' ')[1];
+  // รองรับ token ทั้งจาก Authorization header และ accessToken cookie
+  let token = req.headers.get('authorization')?.split(' ')[1];
+  if (!token) {
+    token = req.cookies.get('accessToken')?.value;
+  }
 
   if (!token) {
     return NextResponse.json({ success: false, code: 'MISSING_TOKEN', message: 'Missing token' }, { status: 401 });
